@@ -1,0 +1,89 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Billing - KarFix{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-secondary">Unpaid jobs</div><div class="h1">{{ summary.unpaid_jobs if summary else unpaid_jobs|length }}</div></div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-secondary">Overdue jobs</div><div class="h1">{{ summary.overdue_jobs if summary else 0 }}</div></div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body"><div class="text-secondary">Outstanding</div><div class="h1">{{ '%.2f'|format(summary.total_unpaid_amount if summary and summary.total_unpaid_amount is not none else 0) }}</div></div></div></div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header"><h3 class="card-title mb-0">Unpaid bills</h3></div>
+    <div class="table-responsive">
+      <table class="table card-table table-vcenter">
+        <thead><tr><th>Job</th><th>Date</th><th>Amount</th><th>Invoice</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for job in unpaid_jobs %}
+          <tr>
+            <td>#{{ job.job_id }}</td>
+            <td>{{ job.job_date }}</td>
+            <td>{{ job.total_cost if job.total_cost is not none else 0 }}</td>
+            <td>
+              {% if invoices.get(job.job_id) %}
+                <span class="badge bg-success">{{ invoices.get(job.job_id).invoice_number }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Awaiting invoice</span>
+              {% endif %}
+            </td>
+            <td>{% if job.is_overdue %}<span class="badge bg-danger">Overdue</span>{% else %}<span class="badge bg-warning">Pending</span>{% endif %}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-center text-secondary py-4">You have no unpaid bills.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3 class="card-title mb-0">Paid jobs</h3></div>
+    <div class="table-responsive">
+      <table class="table card-table table-vcenter">
+        <thead><tr><th>Job</th><th>Date</th><th>Amount</th></tr></thead>
+        <tbody>
+        {% for job in paid_jobs %}
+          <tr>
+            <td>#{{ job.job_id }}</td>
+            <td>{{ job.job_date }}</td>
+            <td>{{ job.total_cost if job.total_cost is not none else 0 }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="3" class="text-center text-secondary py-4">No paid jobs yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title mb-0">Invoices</h3>
+      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('customer.invoices') }}">Open invoice center</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table card-table table-vcenter">
+        <thead><tr><th>Invoice</th><th>Job</th><th>Status</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+        {% for job in jobs %}
+          {% set invoice = invoices.get(job.job_id) %}
+          {% if invoice %}
+          <tr>
+            <td><a href="{{ url_for('customer.invoice_detail', invoice_id=invoice.invoice_id) }}">{{ invoice.invoice_number }}</a></td>
+            <td>#{{ job.job_id }}</td>
+            <td><span class="badge {% if invoice.status == 'paid' %}bg-success{% elif invoice.is_overdue %}bg-danger{% elif invoice.status == 'sent' %}bg-primary{% else %}bg-secondary{% endif %}">{{ invoice.status.title() }}</span></td>
+            <td>{{ '%.2f'|format(invoice.total_amount if invoice.total_amount is not none else 0) }}</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('customer.invoice_download', invoice_id=invoice.invoice_id) }}">Download</a></td>
+          </tr>
+          {% endif %}
+        {% else %}
+          <tr><td colspan="5" class="text-center text-secondary py-4">No invoices yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

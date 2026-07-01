@@ -1,0 +1,89 @@
+{% extends "base/layout.html" %}
+{% block title %}Platform Dashboard - KarFix{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item active">Platform Dashboard</li>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Active Tenants</div><div class="h1 mb-0">{{ summary.active_tenants }}</div><div class="text-secondary">{{ summary.total_tenants }} total</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Total Users</div><div class="h1 mb-0">{{ summary.total_users }}</div><div class="text-secondary">{{ summary.superadmins }} platform owners</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Customers</div><div class="h1 mb-0">{{ summary.total_customers }}</div><div class="text-secondary">{{ summary.customer_users }} portal users</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Platform Revenue</div><div class="h1 mb-0">{{ format_currency(summary.total_revenue) }}</div><div class="text-secondary">Across all tenants</div></div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Tenant Health</h3>
+        <a href="{{ url_for('admin.tenants') }}" class="btn btn-sm btn-outline-primary">View all tenants</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter">
+          <thead><tr><th>Tenant</th><th>Status</th><th>Customers</th><th>Vehicles</th><th>Active Jobs</th><th>Revenue</th></tr></thead>
+          <tbody>
+            {% for row in tenants %}
+            <tr>
+              <td><a href="{{ url_for('admin.tenant_detail', tenant_id=row.tenant.tenant_id) }}">{{ row.tenant.name }}</a></td>
+              <td><span class="badge {% if row.tenant.status == 'active' %}bg-success-lt{% elif row.tenant.status == 'suspended' %}bg-danger-lt{% else %}bg-warning-lt{% endif %}">{{ row.tenant.status|title }}</span></td>
+              <td>{{ row.customer_count }}</td>
+              <td>{{ row.vehicle_count }}</td>
+              <td>{{ row.active_jobs }}</td>
+              <td>{{ format_currency(row.revenue) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-secondary py-4">No tenants found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title mb-0">Quick Links</h3></div>
+      <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.tenants') }}">Manage tenants</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.users') }}">Manage users</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.roles') }}">Review roles</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.audit') }}">Audit log</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.reports') }}">Platform reports</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title mb-0">Recent Tenants</h3></div>
+      <div class="list-group list-group-flush">
+        {% for tenant in recent_tenants %}
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.tenant_detail', tenant_id=tenant.tenant_id) }}">
+          <div class="d-flex justify-content-between"><span>{{ tenant.name }}</span><small class="text-secondary">{{ tenant.status|title }}</small></div>
+        </a>
+        {% else %}
+        <div class="list-group-item text-secondary">No recent tenant activity.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0">Recent Audit Activity</h3>
+    <a href="{{ url_for('admin.audit') }}" class="btn btn-sm btn-outline-secondary">Open log</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table card-table table-vcenter">
+      <thead><tr><th>When</th><th>Action</th><th>Entity</th><th>User</th></tr></thead>
+      <tbody>
+        {% for row in recent_audit %}
+        <tr>
+          <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '' }}</td>
+          <td>{{ row.action }}</td>
+          <td>{{ row.entity_type }}{% if row.entity_id %} #{{ row.entity_id }}{% endif %}</td>
+          <td>{{ row.user.username if row.user else 'System' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-secondary py-4">No audit events yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

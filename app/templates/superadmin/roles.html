@@ -1,0 +1,9 @@
+{% extends "base/layout.html" %}
+{% block title %}Roles - KarFix Platform Owner{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item"><a href="{{ url_for('admin.home') }}">Platform Dashboard</a></li><li class="breadcrumb-item active">Roles</li>{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header"><h3 class="card-title mb-0">Role Model</h3></div>
+  <div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>Role</th><th>Scope</th><th>Description</th></tr></thead><tbody>{% for row in role_rows %}<tr><td class="fw-semibold">{{ row.role }}</td><td>{{ row.scope }}</td><td>{{ row.description }}</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

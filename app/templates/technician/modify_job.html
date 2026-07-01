@@ -1,0 +1,467 @@
+{% extends "base/layout.html" %}
+{% block title %}
+Modify Job #{{ data.job_id }} - KarFix
+{% endblock %}
+
+{% block content %}
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="ti ti-tool text-primary me-2"></i>
+                        Modify Job #{{ data.job_id }}
+                    </h1>
+                    <p class="text-muted mb-0">Update job details, add services and parts</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('technician.current_jobs') }}" class="btn btn-outline-primary">
+                        <i class="ti ti-arrow-left me-1"></i>
+                        Back to Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Status Alert -->
+    {% if data.completed %}
+    <div class="alert alert-success border-0 shadow-sm mb-4">
+        <div class="d-flex">
+            <i class="ti ti-circle-check text-success me-2"></i>
+            <div>
+                <strong>Job Completed</strong>
+                <p class="mb-0">This job has been marked as completed. No further modifications are allowed.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Workflow Controls -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0"><i class="ti ti-badge me-2"></i>Workflow Status</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('technician.update_job_status', job_id=data.job_id) }}" class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select mb-2" name="status">
+                            {% for value, label in [('draft','Draft'), ('in_progress','In Progress'), ('awaiting_parts','Awaiting Parts'), ('completed','Completed'), ('delivered','Delivered')] %}
+                                <option value="{{ value }}" {% if data.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <label class="form-label">Status note</label>
+                        <textarea class="form-control mb-2" name="note" rows="2" placeholder="Optional note about this transition"></textarea>
+                        <button type="submit" class="btn btn-info w-100" {% if job_completed %}disabled{% endif %}>Update status</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('technician.assign_technician', job_id=data.job_id) }}" class="mb-3">
+                        <label class="form-label">Technician</label>
+                        <select class="form-select mb-2" name="technician_id">
+                            <option value="">Unassigned</option>
+                            {% for tech in available_technicians %}
+                                <option value="{{ tech.user_id }}" {% if data.assigned_to == tech.user_id %}selected{% endif %}>{{ tech.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-outline-primary w-100" {% if job_completed %}disabled{% endif %}>Save technician</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('technician.add_job_note', job_id=data.job_id) }}">
+                        <label class="form-label">Internal note</label>
+                        <textarea class="form-control mb-2" name="note" rows="3" placeholder="Add workshop notes, blockers, or reminders"></textarea>
+                        <button type="submit" class="btn btn-outline-secondary w-100">Save note</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="ti ti-history me-2"></i>Status History</h5>
+                </div>
+                <div class="card-body">
+                    {% if status_history %}
+                        <div class="list-group list-group-flush">
+                            {% for entry in status_history %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fw-semibold">{{ entry.old_status or 'new' }} → {{ entry.new_status }}</div>
+                                            <div class="small text-muted">{{ entry.note or 'No note' }}</div>
+                                        </div>
+                                        <small class="text-muted">{{ entry.created_at or '' }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-muted">No status changes recorded yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer & Job Information Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-user-circle me-2"></i>
+                        Customer & Job Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Customer</label>
+                                <div class="info-value">
+                                    <i class="ti ti-user me-2 text-primary"></i>
+                                    {{ data.first_name }} {{ data.family_name }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Customer ID</label>
+                                <div class="info-value">
+                                    <i class="ti ti-hash me-2 text-secondary"></i>
+                                    {{ data.customer_id }}
+                                </div>
+                            </div>
+                            {% if data.vehicle_display_name %}
+                            <div class="info-item">
+                                <label class="info-label">Vehicle</label>
+                                <div class="info-value">
+                                    <i class="ti ti-car me-2 text-info"></i>
+                                    {{ data.vehicle_display_name }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="info-item">
+                                <label class="info-label">Mileage</label>
+                                <div class="info-value">
+                                    <i class="ti ti-tachometer me-2 text-warning"></i>
+                                    {{ data.mileage if data.mileage is not none else 'N/A' }}{% if data.mileage is not none %} km{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Job Date</label>
+                                <div class="info-value">
+                                    <i class="ti ti-calendar-event me-2 text-primary"></i>
+                                    {{ data.job_date }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Total Cost</label>
+                                <div class="info-value">
+                                    <i class="ti ti-currency-dollar me-2 text-success"></i>
+                                    {{ format_currency(data.total_cost|float) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Completion Status</label>
+                                <div class="info-value">
+                                    {% if data.completed %}
+                                        <span class="badge bg-success">
+                                            <i class="ti ti-circle-check me-1"></i>
+                                            Completed
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="ti ti-clock me-1"></i>
+                                            In Progress
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Payment Status</label>
+                                <div class="info-value">
+                                    {% if data.paid %}
+                                        <span class="badge bg-success">
+                                            <i class="ti ti-credit-card me-1"></i>
+                                            Paid
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="ti ti-alert-triangle me-1"></i>
+                                            Unpaid
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services and Parts Section -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-settings me-2"></i>
+                        Services Management
+                    </h5>
+                    <span class="badge bg-light text-dark">{{ services|length }} items</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 p-3 rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-secondary small">Estimated labour/services total</div>
+                                <div class="fw-semibold fs-5">{{ format_currency(services_total|float) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="ti ti-circle-plus me-2"></i>
+                            Add New Service
+                        </h6>
+                        <form method="POST" action="{{ url_for('technician.add_service_to_job', job_id=data.job_id) }}">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Service Type</label>
+                                    <select class="form-select" name="service_id" required {% if job_completed %}disabled{% endif %}>
+                                        <option value="">Select a service...</option>
+                                        {% for service in all_services %}
+                                            <option value="{{ service.service_id }}">
+                                                {{ service.service_name }} - {{ format_currency(service.cost|float) }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" name="quantity" class="form-control" min="1" value="1" required {% if job_completed %}disabled{% endif %}>
+                                </div>
+                                <div class="col-6 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-info w-100" {% if job_completed %}disabled{% endif %}>
+                                        <i class="ti ti-plus me-1"></i>
+                                        Add Service
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div>
+                        <h6 class="text-secondary mb-3">
+                            <i class="ti ti-list-check me-2"></i>
+                            Current Services
+                        </h6>
+                        {% if services %}
+                            <div class="list-group">
+                                {% for service in services %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                        <div>
+                                            <h6 class="mb-1">{{ service.service_name }}</h6>
+                                            <small class="text-muted">Unit: {{ format_currency(service.cost|float) }} · Line: {{ format_currency(service.total_cost|float) }}</small>
+                                        </div>
+                                        <span class="badge bg-info rounded-pill">{{ service.qty }}</span>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('technician.update_job_service', job_id=data.job_id) }}" class="row g-2 align-items-end">
+                                        <input type="hidden" name="service_id" value="{{ service.service_id }}">
+                                        <div class="col-5 col-md-4">
+                                            <label class="form-label small mb-1">Quantity</label>
+                                            <input type="number" name="quantity" min="0" value="{{ service.qty }}" class="form-control form-control-sm" {% if job_completed %}disabled{% endif %}>
+                                        </div>
+                                        <div class="col-7 col-md-8 d-flex gap-2 justify-content-end">
+                                            <button type="submit" class="btn btn-sm btn-primary" {% if job_completed %}disabled{% endif %}>Save</button>
+                                            <button type="submit" formaction="{{ url_for('technician.remove_job_service', job_id=data.job_id) }}" class="btn btn-sm btn-outline-danger" {% if job_completed %}disabled{% endif %}>Remove</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="ti ti-settings text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mt-2">No services added yet</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-puzzle me-2"></i>
+                        Parts Management
+                    </h5>
+                    <span class="badge bg-light text-dark">{{ parts|length }} items</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 p-3 rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-secondary small">Estimated parts total</div>
+                                <div class="fw-semibold fs-5">{{ format_currency(parts_total|float) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="ti ti-circle-plus me-2"></i>
+                            Add New Part
+                        </h6>
+                        <form method="POST" action="{{ url_for('technician.add_part_to_job', job_id=data.job_id) }}">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Part Type</label>
+                                    <select class="form-select" name="part_id" required {% if job_completed %}disabled{% endif %}>
+                                        <option value="">Select a part...</option>
+                                        {% for part in all_parts %}
+                                            <option value="{{ part.part_id }}">
+                                                {{ part.part_name }} - {{ format_currency(part.cost|float) }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" name="quantity" class="form-control" min="1" value="1" required {% if job_completed %}disabled{% endif %}>
+                                </div>
+                                <div class="col-6 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-success w-100" {% if job_completed %}disabled{% endif %}>
+                                        <i class="ti ti-plus me-1"></i>
+                                        Add Part
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div>
+                        <h6 class="text-secondary mb-3">
+                            <i class="ti ti-list-check me-2"></i>
+                            Current Parts
+                        </h6>
+                        {% if parts %}
+                            <div class="list-group">
+                                {% for part in parts %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                        <div>
+                                            <h6 class="mb-1">{{ part.part_name }}</h6>
+                                            <small class="text-muted">Unit: {{ format_currency(part.cost|float) }} · Line: {{ format_currency(part.total_cost|float) }}</small>
+                                        </div>
+                                        <span class="badge bg-success rounded-pill">{{ part.qty }}</span>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('technician.update_job_part', job_id=data.job_id) }}" class="row g-2 align-items-end">
+                                        <input type="hidden" name="part_id" value="{{ part.part_id }}">
+                                        <div class="col-5 col-md-4">
+                                            <label class="form-label small mb-1">Quantity</label>
+                                            <input type="number" name="quantity" min="0" value="{{ part.qty }}" class="form-control form-control-sm" {% if job_completed %}disabled{% endif %}>
+                                        </div>
+                                        <div class="col-7 col-md-8 d-flex gap-2 justify-content-end">
+                                            <button type="submit" class="btn btn-sm btn-primary" {% if job_completed %}disabled{% endif %}>Save</button>
+                                            <button type="submit" formaction="{{ url_for('technician.remove_job_part', job_id=data.job_id) }}" class="btn btn-sm btn-outline-danger" {% if job_completed %}disabled{% endif %}>Remove</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="ti ti-puzzle text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mt-2">No parts added yet</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Attachments / Photos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="ti ti-photo me-2"></i>Attachments / Photos</h5>
+                </div>
+                <div class="card-body">
+                    {% if attachments %}
+                        <ul class="list-group list-group-flush">
+                            {% for attachment in attachments %}
+                                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold">{{ attachment.filename }}</div>
+                                        <div class="small text-muted">{{ attachment.caption or attachment.mime_type or 'Attachment' }}</div>
+                                    </div>
+                                    <a href="{{ attachment.file_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Open</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted">No attachments uploaded yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complete Job Section -->
+    {% if not data.completed %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-circle-check me-2"></i>
+                        Complete Job
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="alert alert-warning border-0 mb-3">
+                                <div class="d-flex">
+                                    <i class="ti ti-alert-triangle me-2"></i>
+                                    <div>
+                                        <strong>Important Notice</strong>
+                                        <p class="mb-0">Once this job is marked as completed, no further modifications can be made. Please ensure all services and parts have been added before completing.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-0">
+                                Current total cost: <strong>{{ format_currency(data.total_cost|float) }}</strong>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <form action="{{ url_for('technician.complete_job', job_id=data['job_id']) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-warning btn-lg" onclick="return confirm('Are you sure you want to mark this job as completed? This action cannot be undone.')">
+                                    <i class="ti ti-circle-check me-2"></i>
+                                    Mark as Completed
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

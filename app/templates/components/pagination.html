@@ -1,0 +1,104 @@
+<!-- Pagination Component -->
+{% if total_pages > 1 %}
+<nav aria-label="Page navigation" class="d-flex justify-content-between align-items-center">
+    <div class="text-muted">
+        Showing {{ ((page - 1) * per_page) + 1 }} - {{ [page * per_page, total]|min }} of {{ total }} items
+    </div>
+
+    <ul class="pagination mb-0">
+        <!-- First Page -->
+        {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=1) }}"
+                   aria-label="First">
+                    <i class="ti ti-chevrons-left"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="ti ti-chevrons-left"></i></span>
+            </li>
+        {% endif %}
+
+        <!-- Previous Page -->
+        {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=page-1) }}"
+                   aria-label="Previous">
+                    <i class="ti ti-chevron-left"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="ti ti-chevron-left"></i></span>
+            </li>
+        {% endif %}
+
+        <!-- Page Numbers -->
+        {% set start_page = [1, page - 2]|max %}
+        {% set end_page = [total_pages, page + 2]|min %}
+
+        {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=1) }}">1</a>
+            </li>
+            {% if start_page > 2 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+        {% endif %}
+
+        {% for page_num in range(start_page, end_page + 1) %}
+            {% if page_num == page %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+            {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=page_num) }}">{{ page_num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=total_pages) }}">{{ total_pages }}</a>
+            </li>
+        {% endif %}
+
+        <!-- Next Page -->
+        {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=page+1) }}"
+                   aria-label="Next">
+                    <i class="ti ti-chevron-right"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="ti ti-chevron-right"></i></span>
+            </li>
+        {% endif %}
+
+        <!-- Last Page -->
+        {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ request.path }}?{{ request.args.to_dict()|urlencode_filter(page=total_pages) }}"
+                   aria-label="Last">
+                    <i class="ti ti-chevrons-right"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="ti ti-chevrons-right"></i></span>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

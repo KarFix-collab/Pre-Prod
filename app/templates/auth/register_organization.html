@@ -1,0 +1,189 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Create Organization - KarFix{% endblock %}
+
+{% block breadcrumb %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.register-bg {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e8eef5 100%);
+    min-height: 80vh;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-bg d-flex align-items-center py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-xl-5">
+                <div class="card border-0 shadow-lg" style="border-top: 4px solid var(--accent) !important;">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
+                                <i class="ti ti-building-plus text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-2">Create Organization</h2>
+                            <p class="text-muted">Set up your business on KarFix</p>
+                        </div>
+
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form id="orgForm" method="POST" action="{{ url_for('auth.register_organization') }}" novalidate>
+                            <div class="mb-3">
+                                <label for="name" class="form-label fw-semibold">Organization Name <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="ti ti-building text-muted"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                           placeholder="e.g. Mike's Auto Shop" required minlength="2">
+                                </div>
+                                <div class="invalid-feedback" id="nameFeedback">Organization name must be at least 2 characters.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="business_type" class="form-label fw-semibold">Business Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="business_type" name="business_type" required>
+                                    <option value="" selected disabled>Select a business type...</option>
+                                    <option value="auto_repair">Auto Repair</option>
+                                    <option value="parts_seller">Parts Seller</option>
+                                    <option value="both">Both</option>
+                                </select>
+                                <div class="invalid-feedback" id="businessTypeFeedback">Please select a business type.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label fw-semibold">Business Email <span class="text-muted fw-normal">(optional)</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="ti ti-mail text-muted"></i>
+                                    </span>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                           placeholder="shop@example.com">
+                                </div>
+                                <div class="invalid-feedback" id="emailFeedback">Please provide a valid email address.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phone" class="form-label fw-semibold">Phone <span class="text-muted fw-normal">(optional)</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="ti ti-phone text-muted"></i>
+                                    </span>
+                                    <input type="tel" class="form-control" id="phone" name="phone"
+                                           placeholder="(555) 123-4567">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="address" class="form-label fw-semibold">Address <span class="text-muted fw-normal">(optional)</span></label>
+                                <textarea class="form-control" id="address" name="address" rows="2"
+                                          placeholder="Street address, city, state, zip"></textarea>
+                            </div>
+
+                            <button type="submit" id="submitBtn" class="btn btn-accent btn-lg w-100">
+                                <i class="ti ti-plus me-2"></i>Create Organization
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <a href="{{ url_for('auth.no_organization') }}" class="text-muted text-decoration-none text-sm">
+                                <i class="ti ti-arrow-left me-1"></i>Back
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('orgForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!form) return;
+
+    form.addEventListener('submit', function(event) {
+        console.log('Form submit event triggered');
+        
+        // Validate required fields
+        const name = document.getElementById('name').value.trim();
+        const businessType = document.getElementById('business_type').value;
+        const email = document.getElementById('email').value.trim();
+        
+        let isValid = true;
+        
+        // Validate name
+        if (!name || name.length < 2) {
+            document.getElementById('name').classList.add('is-invalid');
+            document.getElementById('nameFeedback').style.display = 'block';
+            isValid = false;
+        } else {
+            document.getElementById('name').classList.remove('is-invalid');
+            document.getElementById('nameFeedback').style.display = 'none';
+        }
+        
+        // Validate business type
+        if (!businessType) {
+            document.getElementById('business_type').classList.add('is-invalid');
+            document.getElementById('businessTypeFeedback').style.display = 'block';
+            isValid = false;
+        } else {
+            document.getElementById('business_type').classList.remove('is-invalid');
+            document.getElementById('businessTypeFeedback').style.display = 'none';
+        }
+        
+        // Validate email if provided
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                document.getElementById('email').classList.add('is-invalid');
+                document.getElementById('emailFeedback').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('email').classList.remove('is-invalid');
+                document.getElementById('emailFeedback').style.display = 'none';
+            }
+        }
+        
+        if (!isValid) {
+            console.log('Form validation failed');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+        
+        console.log('Form validation passed - submitting form');
+        console.log('Form data:', {
+            name: name,
+            businessType: businessType,
+            email: email,
+            phone: document.getElementById('phone').value.trim(),
+            address: document.getElementById('address').value.trim()
+        });
+        
+        // Disable button to prevent double submission
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+        
+        // Allow form submission to proceed
+        return true;
+    });
+});
+</script>
+{% endblock %}

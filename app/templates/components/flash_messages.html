@@ -1,0 +1,30 @@
+<!-- Flash Messages Component -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-fluid">
+            {% for category, message in messages %}
+                {% set alert_class = {
+                    'success': 'alert-success',
+                    'info': 'alert-info',
+                    'warning': 'alert-warning',
+                    'error': 'alert-danger',
+                    'danger': 'alert-danger'
+                } %}
+
+                {% set icon_class = {
+                    'success': 'ti-circle-check',
+                    'info': 'ti-info-circle',
+                    'warning': 'ti-alert-triangle',
+                    'error': 'ti-circle-x',
+                    'danger': 'ti-circle-x'
+                } %}
+
+                <div class="alert {{ alert_class.get(category, 'alert-info') }} alert-dismissible fade show" role="alert">
+                    <i class="ti {{ icon_class.get(category, 'ti-info-circle') }} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}

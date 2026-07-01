@@ -1,0 +1,162 @@
+{% extends "base/layout_with_sidebar.html" %}
+{% block title %}Team Members - Administrator Portal{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Team Members</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+                        <i class="ti ti-users text-primary"></i>
+                        Team Members
+                    </h1>
+                    <p class="text-muted mb-0">Manage your team and invite new members</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card" style="border-top: 3px solid var(--success);">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold d-flex align-items-center gap-2 mb-3">
+                        <i class="ti ti-user-plus text-success"></i>
+                        Invite Team Member
+                    </h5>
+                    <form method="post" action="{{ url_for('administrator.invite_team_member') }}">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-control" name="invite_email" placeholder="colleague@example.com" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" name="invite_role" required>
+                                    <option value="">Select role...</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="technician">Technician</option>
+                                    <option value="parts_clerk">Parts Clerk</option>
+                                    <option value="viewer">Viewer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="ti ti-send me-1"></i>
+                                    Send Invite
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white;">
+                    <h5 class="card-title mb-0 d-flex align-items-center gap-2" style="color: white;">
+                        <i class="ti ti-users"></i>
+                        Current Members
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in members|default([]) %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-2">
+                                                <i class="ti ti-user text-primary"></i>
+                                            </div>
+                                            <strong>{{ member.name|default(member.email) }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="d-flex align-items-center gap-1">
+                                            <i class="ti ti-mail text-muted"></i>
+                                            {{ member.email }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if member.role == 'admin' %}primary{% elif member.role == 'manager' %}info{% elif member.role == 'technician' %}success{% elif member.role == 'parts_clerk' %}warning{% else %}secondary{% endif %}">
+                                            {{ member.role|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if member.status|default('active') == 'active' %}
+                                        <span class="badge bg-success">
+                                            <i class="ti ti-circle-check me-1"></i>
+                                            Active
+                                        </span>
+                                        {% elif member.status == 'invited' %}
+                                        <span class="badge bg-warning">
+                                            <i class="ti ti-clock me-1"></i>
+                                            Invited
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="ti ti-circle-x me-1"></i>
+                                            Inactive
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <form method="post" action="{{ url_for('administrator.update_team_member_role', membership_id=member.membership_id) }}" class="d-inline">
+                                                <select class="form-select form-select-sm d-inline-block" name="new_role" onchange="this.form.submit()" style="width: auto;">
+                                                    <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>Admin</option>
+                                                    <option value="manager" {% if member.role == 'manager' %}selected{% endif %}>Manager</option>
+                                                    <option value="technician" {% if member.role == 'technician' %}selected{% endif %}>Tech</option>
+                                                    <option value="parts_clerk" {% if member.role == 'parts_clerk' %}selected{% endif %}>Parts Clerk</option>
+                                                    <option value="viewer" {% if member.role == 'viewer' %}selected{% endif %}>Viewer</option>
+                                                </select>
+                                            </form>
+                                            <form method="post" action="{{ url_for('administrator.remove_team_member', membership_id=member.membership_id) }}" class="d-inline" onsubmit="return confirm('Remove this team member?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="ti ti-user-minus"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="ti ti-users mb-2 d-block mx-auto" style="font-size: 48px;"></i>
+                                        No team members yet. Invite someone above.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

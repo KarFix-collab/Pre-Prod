@@ -1,0 +1,146 @@
+{% extends "base/layout_with_sidebar.html" %}
+{% block title %}Organization Settings - Administrator Portal{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Organization Settings</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+                        <i class="ti ti-building text-primary"></i>
+                        Organization Settings
+                    </h1>
+                    <p class="text-muted mb-0">Configure your shop's profile and preferences</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card" style="border-top: 3px solid var(--primary);">
+                <div class="card-body p-4">
+                    <form method="post" action="{{ url_for('administrator.org_settings') if url_for('administrator.org_settings') is defined else '#' }}">
+                        <div class="row g-4">
+                            <!-- Organization Name -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-building me-1"></i>
+                                    Organization Name
+                                </label>
+                                <input type="text" class="form-control" name="name" value="{{ tenant.name|default('') }}" placeholder="Your Shop Name" required>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-phone me-1"></i>
+                                    Phone
+                                </label>
+                                <input type="tel" class="form-control" name="phone" value="{{ tenant.phone|default('') }}" placeholder="(555) 123-4567">
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-map-pin me-1"></i>
+                                    Address
+                                </label>
+                                <textarea class="form-control" name="address" rows="2" placeholder="123 Main Street, City, State ZIP">{{ tenant.address|default('') }}</textarea>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-mail me-1"></i>
+                                    Email
+                                </label>
+                                <input type="email" class="form-control" name="email" value="{{ tenant.email|default('') }}" placeholder="shop@example.com">
+                            </div>
+
+                            <!-- Logo URL -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-photo me-1"></i>
+                                    Logo URL
+                                </label>
+                                <input type="url" class="form-control" name="logo_url" value="{{ tenant.logo_url|default('') }}" placeholder="https://example.com/logo.png">
+                            </div>
+
+                            <!-- Tax Rate -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-percentage me-1"></i>
+                                    Tax Rate (%)
+                                </label>
+                                <input type="number" class="form-control" name="tax_rate" step="0.01" min="0" max="100" value="{{ tenant.settings.tax_rate|default('') if tenant.settings else '' }}" placeholder="8.25">
+                            </div>
+
+                            <!-- Currency -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="ti ti-currency-dollar me-1"></i>
+                                    Currency
+                                </label>
+                                <select class="form-select" name="currency">
+                                    <option value="USD" {% if tenant.currency_code|default('ZAR') == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+                                    <option value="EUR" {% if tenant.currency_code|default('ZAR') == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                                    <option value="GBP" {% if tenant.currency_code|default('ZAR') == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+                                    <option value="CAD" {% if tenant.currency_code|default('ZAR') == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+                                    <option value="AUD" {% if tenant.currency_code|default('ZAR') == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+                                    <option value="ZAR" {% if tenant.currency_code|default('ZAR') == 'ZAR' %}selected{% endif %}>ZAR - South African Rand</option>
+                                </select>
+                            </div>
+
+                            <!-- Save Button -->
+                            <div class="col-12">
+                                <hr class="my-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="ti ti-device-floppy me-1"></i>
+                                    Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold d-flex align-items-center gap-2 mb-3">
+                        <i class="ti ti-info-circle text-info"></i>
+                        About Settings
+                    </h6>
+                    <p class="text-muted small mb-3">
+                        These settings apply to your entire organization. Changes will be reflected across all invoices, reports, and customer-facing documents.
+                    </p>
+                    <ul class="list-unstyled text-muted small">
+                        <li class="py-1 d-flex align-items-start gap-2">
+                            <i class="ti ti-check text-success mt-1" style="flex-shrink: 0;"></i>
+                            Organization name appears on invoices
+                        </li>
+                        <li class="py-1 d-flex align-items-start gap-2">
+                            <i class="ti ti-check text-success mt-1" style="flex-shrink: 0;"></i>
+                            Tax rate is applied to all new jobs
+                        </li>
+                        <li class="py-1 d-flex align-items-start gap-2">
+                            <i class="ti ti-check text-success mt-1" style="flex-shrink: 0;"></i>
+                            Currency affects all pricing displays
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

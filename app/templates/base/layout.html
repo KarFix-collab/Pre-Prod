@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="KarFix - Cloud Automotive Platform for modern repair shops">
+    <meta name="author" content="KarFix">
+
+    {% if config and config.get('SUPABASE_URL') %}
+    <meta name="supabase-url" content="{{ config.get('SUPABASE_URL') }}">
+    <meta name="supabase-anon-key" content="{{ config.get('SUPABASE_ANON_KEY') }}">
+    {% endif %}
+
+    <title>{% block title %}KarFix{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
+
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.37.1/dist/tabler-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100 app-shell">
+    <a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
+
+    {% set is_logged_in = session.get('logged_in') %}
+    {% set brand_context = session.get('customer_name') if current_role_name == 'customer' and session.get('customer_name') else (current_tenant.name if current_tenant else (session.get('username') or 'Workspace')) %}
+    {% set brand_role_label = 'Customer' if current_role_name == 'customer' else ('Platform Owner' if is_superadmin_user else ('Workshop' if current_role_name else '')) %}
+    {% set profile_name = session.get('customer_name') if current_role_name == 'customer' and session.get('customer_name') else (session.get('username') or brand_context) %}
+
+    <header class="navbar navbar-expand-lg navbar-dark app-navbar sticky-top">
+        <div class="container-fluid px-3 px-lg-4">
+            <a class="app-brand" href="{% if is_superadmin_user %}{{ url_for('platform.home') }}{% else %}{{ url_for('main.dashboard') if is_logged_in else url_for('main.index') }}{% endif %}" aria-label="KarFix home">
+                <img src="{{ url_for('static', filename='images/karfix-logo.svg') }}" alt="KarFix Cloud Automotive Platform" class="app-brand-lockup">
+            </a>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto justify-content-end">
+                {% if is_logged_in %}
+                    <div class="workspace-chip d-none d-md-inline-flex">
+                        <span class="chip-icon {% if current_role_name == 'customer' %}bg-customer{% elif is_superadmin_user %}bg-admin{% else %}bg-tenant{% endif %}">
+                            <i class="ti {% if current_role_name == 'customer' %}ti-user{% elif is_superadmin_user %}ti-shield-star{% else %}ti-building{% endif %}"></i>
+                        </span>
+                        <span class="chip-text">
+                            <span class="chip-label">{{ brand_role_label }}</span>
+                            <span class="chip-value">{{ brand_context }}</span>
+                        </span>
+                    </div>
+
+                    {% if user_tenants and user_tenants|length > 1 %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-light org-switcher-btn d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="ti ti-switch-horizontal"></i>
+                            <span class="d-none d-sm-inline">Switch</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Organizations</h6></li>
+                            {% for tenant in user_tenants %}
+                            <li>
+                                <form method="POST" action="{{ url_for('auth.switch_tenant') }}" class="d-inline w-100">
+                                    <input type="hidden" name="tenant_slug" value="{{ tenant.slug }}">
+                                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                                        {% if current_tenant and tenant.tenant_id == current_tenant.tenant_id %}
+                                            <i class="ti ti-check text-success"></i>
+                                        {% else %}
+                                            <span style="width: 1rem;"></span>
+                                        {% endif %}
+                                        {{ tenant.name }}
+                                    </button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if current_role_name != 'customer' %}
+                    <div class="position-relative d-none d-md-block" style="min-width: 240px;">
+                        <input type="text" class="form-control form-control-sm ps-3" placeholder="Search customers..." id="globalSearch" autocomplete="off">
+                        <div class="search-results-dropdown" id="searchResultsDropdown"></div>
+                    </div>
+                    {% endif %}
+
+                    <div class="dropdown">
+                        <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="ti ti-bell fs-5"></i>
+                            {% if notification_count|default(0) > 0 %}
+                            <span class="badge bg-danger badge-notification">{{ notification_count }}</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Notifications</h6></li>
+                            {% if overdue_bills_count|default(0) > 0 %}
+                            <li><a class="dropdown-item" href="{% if is_superadmin_user %}{{ url_for('administrator.overdue_bills') }}{% elif current_role_name == 'customer' %}{{ url_for('customer.billing') }}{% else %}#{% endif %}">
+                                <div class="d-flex">
+                                    <i class="ti ti-alert-triangle text-warning me-2"></i>
+                                    <div>
+                                        <div class="fw-semibold">Overdue Payments</div>
+                                        <small class="text-secondary">{{ overdue_bills_count }} bill{{ 's' if overdue_bills_count != 1 }} overdue</small>
+                                    </div>
+                                </div>
+                            </a></li>
+                            {% endif %}
+                            {% if unpaid_bills_count|default(0) > 0 %}
+                            <li><a class="dropdown-item" href="{% if is_superadmin_user %}{{ url_for('administrator.pay_bills') }}{% elif current_role_name == 'customer' %}{{ url_for('customer.billing') }}{% else %}#{% endif %}">
+                                <div class="d-flex">
+                                    <i class="ti ti-credit-card text-info me-2"></i>
+                                    <div>
+                                        <div class="fw-semibold">Unpaid Bills</div>
+                                        <small class="text-secondary">{{ unpaid_bills_count }} bill{{ 's' if unpaid_bills_count != 1 }} awaiting payment</small>
+                                    </div>
+                                </div>
+                            </a></li>
+                            {% endif %}
+                            {% if notification_count|default(0) == 0 %}
+                            <li><span class="dropdown-item text-secondary">No new notifications</span></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="nav-link btn btn-link text-white text-decoration-none profile-trigger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="profile-avatar">{{ (profile_name or 'K')[:1]|upper }}</span>
+                            <span class="profile-copy d-none d-md-inline-flex">
+                                <span class="profile-name">{{ profile_name }}</span>
+                                <span class="profile-role">{{ brand_role_label }}</span>
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% if current_role_name == 'customer' %}{{ url_for('customer.dashboard') }}{% elif is_superadmin_user %}{{ url_for('platform.home') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}">
+                                <i class="ti ti-layout-dashboard me-2"></i>{% if is_superadmin_user %}Platform Dashboard{% else %}Dashboard{% endif %}
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% if current_role_name == 'customer' %}{{ url_for('customer.profile') }}{% elif is_superadmin_user %}{{ url_for('platform.home') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}">
+                                <i class="ti ti-user me-2"></i>Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% if is_superadmin_user %}{{ url_for('administrator.org_settings') }}{% elif current_role_name == 'customer' %}{{ url_for('customer.profile') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}">
+                                <i class="ti ti-settings me-2"></i>{% if is_superadmin_user %}Platform Settings{% else %}Settings{% endif %}
+                            </a></li>
+                            {% if user_tenants and user_tenants|length > 1 %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="document.querySelector('.org-switcher-btn')?.click(); return false;">
+                                <i class="ti ti-switch-horizontal me-2"></i>Switch Organization
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.help_page') }}"><i class="ti ti-help me-2"></i>Help</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.about') }}"><i class="ti ti-info-circle me-2"></i>About</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtn" onclick="handleLogout(event)"><i class="ti ti-logout me-2"></i>Sign Out</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a class="btn btn-outline-light" href="{{ url_for('auth.login') }}">
+                        <i class="ti ti-login me-1"></i> Sign In
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="page-wrapper flex-fill">
+        {% block breadcrumb %}
+        {% if is_logged_in %}
+        <div class="page-header d-print-none">
+            <div class="container-fluid px-3 px-lg-4">
+                <ol class="breadcrumb mb-0 py-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% if is_superadmin_user %}{{ url_for('platform.home') }}{% elif current_role_name == 'customer' %}{{ url_for('customer.dashboard') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}">
+                            <i class="ti ti-home"></i> {% if is_superadmin_user %}Platform Dashboard{% else %}Dashboard{% endif %}
+                        </a>
+                    </li>
+                    {% block breadcrumb_items %}{% endblock %}
+                </ol>
+            </div>
+        </div>
+        {% endif %}
+        {% endblock %}
+
+        {% include 'components/toast_notifications.html' %}
+
+        <div class="page-body" id="main-content">
+            <div class="container-fluid px-3 px-lg-4 py-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer footer-transparent d-print-none">
+        <div class="container-fluid px-3 px-lg-4 py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="{{ url_for('static', filename='images/karfix-icon.svg') }}" alt="KarFix" style="height:20px; width:auto;">
+                    <span>KarFix &copy; <script>document.write(new Date().getFullYear())</script></span>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <a href="{{ url_for('main.help_page') }}" class="link-secondary"><i class="ti ti-help me-1"></i>Help</a>
+                    <a href="{{ url_for('main.about') }}" class="link-secondary"><i class="ti ti-info-circle me-1"></i>About</a>
+                    <a href="https://github.com/ChanMeng666/automotive-repair-management-system" class="link-secondary" target="_blank" rel="noopener"><i class="ti ti-brand-github me-1"></i>Source</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="{{ url_for('static', filename='js/supabase-auth.js') }}"></script>
+    <script>
+        window.APP_CONFIG = {
+            currencyCode: {{ current_currency_code|tojson }},
+            currencySymbol: {{ current_currency_symbol|tojson }},
+            formatCurrencyFn: function(amount) {
+                const code = this.currencyCode || 'ZAR';
+                const locale = code === 'ZAR' ? 'en-ZA' : 'en-US';
+                const numeric = Number(amount || 0);
+                try {
+                    return new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(numeric);
+                } catch (error) {
+                    return (this.currencySymbol || 'R') + numeric.toFixed(2);
+                }
+            }
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('globalSearch');
+            const dropdown = document.getElementById('searchResultsDropdown');
+            if (!searchInput || !dropdown) return;
+
+            let searchTimeout;
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                if (query.length < 2) {
+                    dropdown.classList.remove('show');
+                    dropdown.innerHTML = '';
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    fetch('/api/search/customers?q=' + encodeURIComponent(query))
+                        .then(r => r.json())
+                        .then(results => {
+                            if (results.length === 0) {
+                                dropdown.innerHTML = '<div class="search-no-results p-3 text-center">No customers found</div>';
+                            } else {
+                                dropdown.innerHTML = results.slice(0, 8).map(c =>
+                                    '<a href="/customers/' + c.customer_id + '" class="search-result-item">' +
+                                        '<i class="ti ti-user" style="color:var(--tblr-secondary);"></i>' +
+                                        '<div><div class="search-result-name">' + escapeHtml(c.full_name) + '</div>' +
+                                        '<div class="search-result-detail">' + escapeHtml(c.email || '') + (c.phone ? ' &middot; ' + escapeHtml(c.phone) : '') + '</div></div>' +
+                                    '</a>'
+                                ).join('');
+                            }
+                            dropdown.classList.add('show');
+                        })
+                        .catch(() => {
+                            dropdown.innerHTML = '<div class="search-no-results p-3 text-center">Search unavailable</div>';
+                            dropdown.classList.add('show');
+                        });
+                }, 250);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{% extends "base/layout.html" %}
+{% block title %}Tenant {{ tenant.name }} - KarFix Platform Owner{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item"><a href="{{ url_for('admin.home') }}">Platform Dashboard</a></li><li class="breadcrumb-item"><a href="{{ url_for('admin.tenants') }}">Tenants</a></li><li class="breadcrumb-item active">{{ tenant.name }}</li>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title mb-0">Edit Tenant</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3"><label class="form-label">Name</label><input name="name" class="form-control" value="{{ tenant.name }}" required></div>
+          <div class="mb-3"><label class="form-label">Business Type</label><select name="business_type" class="form-select">{% for value in ['auto_repair','parts_seller','both'] %}<option value="{{ value }}" {% if tenant.business_type == value %}selected{% endif %}>{{ value.replace('_',' ')|title }}</option>{% endfor %}</select></div>
+          <div class="mb-3"><label class="form-label">Status</label><select name="status" class="form-select">{% for value in ['trial','active','suspended'] %}<option value="{{ value }}" {% if tenant.status == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></div>
+          <div class="mb-3"><label class="form-label">Email</label><input name="email" type="email" class="form-control" value="{{ tenant.email or '' }}"></div>
+          <div class="mb-3"><label class="form-label">Phone</label><input name="phone" class="form-control" value="{{ tenant.phone or '' }}"></div>
+          <div class="mb-3"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="3">{{ tenant.address or '' }}</textarea></div>
+          <div class="mb-3"><label class="form-label">Currency</label><input name="currency" class="form-control" value="{{ tenant.currency_code }}"></div>
+          <button class="btn btn-primary" type="submit">Save tenant</button>
+        </form>
+        <div class="mt-3 d-flex gap-2">
+          <form method="post" action="{{ url_for('admin.suspend_tenant', tenant_id=tenant.tenant_id) }}"><button class="btn btn-outline-danger" type="submit">Suspend</button></form>
+          <form method="post" action="{{ url_for('admin.reactivate_tenant', tenant_id=tenant.tenant_id) }}"><button class="btn btn-outline-success" type="submit">Reactivate</button></form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="row g-3 mb-3">
+      <div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Customers</div><div class="h1 mb-0">{{ metrics.customer_count if metrics else 0 }}</div></div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Vehicles</div><div class="h1 mb-0">{{ metrics.vehicle_count if metrics else 0 }}</div></div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Active Jobs</div><div class="h1 mb-0">{{ metrics.active_jobs if metrics else 0 }}</div></div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Revenue</div><div class="h1 mb-0">{{ format_currency(metrics.revenue if metrics else 0) }}</div></div></div></div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title mb-0">Users</h3></div>
+      <div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>User</th><th>Role</th><th>Status</th></tr></thead><tbody>{% for membership in tenant_users %}<tr><td>{{ membership.user.username if membership.user else membership.user_id }}</td><td>{{ membership.role }}</td><td>{{ membership.status }}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-secondary py-4">No users linked.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title mb-0">Customers</h3></div>
+      <div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead><tbody>{% for customer in tenant_customers %}<tr><td>{{ customer.full_name }}</td><td>{{ customer.email }}</td><td>{{ customer.phone }}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-secondary py-4">No customers linked.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title mb-0">Recent Jobs</h3></div>
+      <div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>Date</th><th>Status</th><th>Customer</th><th>Total</th></tr></thead><tbody>{% for job in tenant_jobs %}<tr><td>{{ job.job_date }}</td><td>{{ job.status|replace('_',' ')|title }}</td><td>{{ job.customer_rel.full_name if job.customer_rel else job.customer }}</td><td>{{ format_currency(job.total_cost or 0) }}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-secondary py-4">No jobs linked.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title mb-0">Recent Audit</h3></div>
+      <div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>When</th><th>Action</th><th>Entity</th></tr></thead><tbody>{% for row in recent_audit %}<tr><td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '' }}</td><td>{{ row.action }}</td><td>{{ row.entity_type }}{% if row.entity_id %} #{{ row.entity_id }}{% endif %}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-secondary py-4">No audit events yet.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

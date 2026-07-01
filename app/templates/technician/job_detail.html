@@ -1,0 +1,348 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Job #{{ data.job_id }} Details - KarFix{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+    </li>
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('technician.current_jobs') }}">Current Jobs</a>
+    </li>
+    <li class="breadcrumb-item active">Job #{{ data.job_id }}</li>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-gray-900 mb-2 d-flex align-items-center gap-2">
+            <i class="ti ti-file-text text-primary"></i>
+            Job #{{ data.job_id }} Details
+        </h1>
+        <p class="text-muted mb-0">View job information, services, and parts</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if not data.completed %}
+        <a href="{{ url_for('technician.modify_job', job_id=data.job_id) }}" class="btn btn-accent">
+            <i class="ti ti-pencil me-2"></i>Edit Job
+        </a>
+        <form action="{{ url_for('technician.complete_job', job_id=data.job_id) }}" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to mark this job as completed? This action cannot be undone.')">
+                <i class="ti ti-circle-check me-2"></i>Mark Complete
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('technician.current_jobs') }}" class="btn btn-outline-secondary">
+            <i class="ti ti-arrow-left me-2"></i>Back to Jobs
+        </a>
+    </div>
+</div>
+
+<!-- Status Banner -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if data.completed and data.paid %}
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-0" role="alert">
+            <i class="ti ti-circle-check"></i>
+            <strong>Completed and Paid</strong> -- This job has been completed and payment has been received.
+        </div>
+        {% elif data.completed %}
+        <div class="alert alert-info d-flex align-items-center gap-2 mb-0" role="alert">
+            <i class="ti ti-circle-check"></i>
+            <strong>Completed</strong> -- This job has been marked as completed. Awaiting payment.
+        </div>
+        {% else %}
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-0" role="alert">
+            <i class="ti ti-clock"></i>
+            <strong>In Progress</strong> -- This job is currently active.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Workflow Summary -->
+<div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header"><h3 class="card-title"><i class="ti ti-badge me-2"></i>Workflow</h3></div>
+            <div class="card-body">
+                <div class="mb-2"><span class="text-muted d-block">Status</span><strong>{{ data.status_text }}</strong></div>
+                <div class="mb-2"><span class="text-muted d-block">Technician</span><strong>{{ data.assigned_technician_name or 'Unassigned' }}</strong></div>
+                <div class="mb-2"><span class="text-muted d-block">Notes</span><div class="small">{{ data.internal_notes or 'No internal notes yet.' }}</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 mb-3">
+        <div class="card h-100">
+            <div class="card-header"><h3 class="card-title"><i class="ti ti-history me-2"></i>Status History</h3></div>
+            <div class="card-body">
+                {% if status_history %}
+                    <div class="list-group list-group-flush">
+                        {% for entry in status_history %}
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold">{{ entry.old_status or 'new' }} → {{ entry.new_status }}</div>
+                                    <div class="small text-muted">{{ entry.note or 'No note' }}</div>
+                                </div>
+                                <small class="text-muted">{{ entry.created_at or '' }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-muted">No status history recorded yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Customer Information -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-user me-2"></i>
+                    Customer Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 d-flex align-items-center justify-content-center">
+                        <i class="ti ti-user text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-5">{{ data.first_name }} {{ data.family_name }}</div>
+                        <small class="text-muted">Customer ID: #{{ data.customer_id }}</small>
+                        {% if data.vehicle_display_name %}
+                        <div class="mt-2"><span class="badge bg-info-lt text-info">Vehicle: {{ data.vehicle_display_name }}</span></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if data.email %}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="ti ti-mail text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Email</small>
+                        <span class="fw-medium">{{ data.email }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if data.phone %}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="ti ti-phone text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Phone</small>
+                        <span class="fw-medium">{{ data.phone }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <div class="d-flex align-items-center mb-3">
+                    <i class="ti ti-calendar text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Job Date</small>
+                        <span class="fw-medium">{{ data.job_date.strftime('%b %d, %Y') if data.job_date else 'N/A' }}</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-3">
+                    <i class="ti ti-tachometer text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Mileage</small>
+                        <span class="fw-medium">{{ data.mileage if data.mileage is not none else 'N/A' }}{% if data.mileage is not none %} km{% endif %}</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center">
+                    <i class="ti ti-tag text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Status</small>
+                        {% if data.completed %}
+                            <span class="badge bg-success">
+                                <i class="ti ti-circle-check me-1"></i>
+                                Completed
+                            </span>
+                        {% elif data.paid %}
+                            <span class="badge bg-success">
+                                <i class="ti ti-credit-card me-1"></i>
+                                Paid
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">
+                                <i class="ti ti-clock me-1"></i>
+                                In Progress
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services & Parts -->
+    <div class="col-lg-8 mb-4">
+        <!-- Services Table -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-tool me-2"></i>
+                    Services
+                </h3>
+            </div>
+
+            {% if services %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Quantity</th>
+                            <th class="text-end">Unit Cost</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set services_total = namespace(value=0) %}
+                        {% for service in services %}
+                        {% set line_total = (service.cost|float) * (service.qty|int) %}
+                        {% set services_total.value = services_total.value + line_total %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ service.service_name }}</div>
+                            </td>
+                            <td>{{ service.qty }}</td>
+                            <td class="text-end">{{ format_currency(service.cost|float) }}</td>
+                            <td class="text-end fw-semibold">{{ format_currency(line_total) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold">Services Total:</td>
+                            <td class="text-end fw-bold text-success">{{ format_currency(services_total.value) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty">
+                <div class="empty-icon"><i class="ti ti-tool"></i></div>
+                <p class="empty-title">No Services</p>
+                <p class="empty-subtitle text-secondary">No services have been added to this job.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Parts Table -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-package me-2"></i>
+                    Parts
+                </h3>
+            </div>
+
+            {% if parts %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Part</th>
+                            <th>Quantity</th>
+                            <th class="text-end">Unit Cost</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set parts_total = namespace(value=0) %}
+                        {% for part in parts %}
+                        {% set line_total = (part.cost|float) * (part.qty|int) %}
+                        {% set parts_total.value = parts_total.value + line_total %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ part.part_name }}</div>
+                            </td>
+                            <td>{{ part.qty }}</td>
+                            <td class="text-end">{{ format_currency(part.cost|float) }}</td>
+                            <td class="text-end fw-semibold">{{ format_currency(line_total) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold">Parts Total:</td>
+                            <td class="text-end fw-bold text-success">{{ format_currency(parts_total.value) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty">
+                <div class="empty-icon"><i class="ti ti-package"></i></div>
+                <p class="empty-title">No Parts</p>
+                <p class="empty-subtitle text-secondary">No parts have been added to this job.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Total Cost Summary -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="fw-bold mb-1">Total Cost</h4>
+                        <p class="text-muted mb-0">Combined services and parts</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="fs-2 fw-bold text-success">{{ format_currency(data.total_cost|float) }}</span>
+                        <div class="mt-1">
+                            {% if data.paid %}
+                                <span class="badge bg-success">
+                                    <i class="ti ti-circle-check me-1"></i>
+                                    Paid
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="ti ti-clock me-1"></i>
+                                    Unpaid
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title"><i class="ti ti-photo me-2"></i>Attachments / Photos</h3></div>
+                <div class="card-body">
+                    {% if attachments %}
+                        <div class="list-group list-group-flush">
+                            {% for attachment in attachments %}
+                                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold">{{ attachment.filename }}</div>
+                                        <div class="small text-muted">{{ attachment.caption or attachment.mime_type or 'Attachment' }}</div>
+                                    </div>
+                                    <a href="{{ attachment.file_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Open</a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-muted">No attachments uploaded yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base/layout.html" %}
+{% block title %}Tenants - KarFix Platform Owner{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item"><a href="{{ url_for('admin.home') }}">Platform Dashboard</a></li><li class="breadcrumb-item active">Tenants</li>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title mb-0">Create Tenant</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3"><label class="form-label">Workshop Name</label><input name="name" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">Business Type</label><select name="business_type" class="form-select">{% for value in ['auto_repair','parts_seller','both'] %}<option value="{{ value }}">{{ value.replace('_',' ')|title }}</option>{% endfor %}</select></div>
+          <div class="mb-3"><label class="form-label">Email</label><input name="email" type="email" class="form-control"></div>
+          <div class="mb-3"><label class="form-label">Phone</label><input name="phone" class="form-control"></div>
+          <div class="mb-3"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="3"></textarea></div>
+          <div class="mb-3"><label class="form-label">Optional Owner User ID</label><input name="owner_user_id" type="number" class="form-control"></div>
+          <button class="btn btn-primary" type="submit">Create tenant</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title mb-0">Tenant Directory</h3></div>
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter">
+          <thead><tr><th>Tenant</th><th>Status</th><th>Customers</th><th>Vehicles</th><th>Jobs</th><th></th></tr></thead>
+          <tbody>
+            {% for tenant in tenants %}
+            {% set row = metrics.get(tenant.tenant_id) %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ tenant.name }}</div>
+                <div class="text-secondary small">{{ tenant.slug }}</div>
+              </td>
+              <td><span class="badge {% if tenant.status == 'active' %}bg-success-lt{% elif tenant.status == 'suspended' %}bg-danger-lt{% else %}bg-warning-lt{% endif %}">{{ tenant.status|title }}</span></td>
+              <td>{{ row.customer_count if row else 0 }}</td>
+              <td>{{ row.vehicle_count if row else 0 }}</td>
+              <td>{{ row.active_jobs if row else 0 }}</td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.tenant_detail', tenant_id=tenant.tenant_id) }}">Open</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-secondary py-4">No tenants found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Platform Owner | KarFix{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include 'components/platform_sidebar.html' %}
+    <div class="admin-main-content">
+        <div class="page-header d-print-none mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h1 class="page-title mb-1">Platform Owner Dashboard</h1>
+                    <div class="text-secondary">Control plane overview for the KarFix SaaS platform.</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-primary" href="{{ url_for('platform.modules') }}"><i class="ti ti-layout-grid me-1"></i>Platform Administration</a>
+                    <a class="btn btn-primary" href="{{ url_for('admin.tenants') }}"><i class="ti ti-building me-1"></i>Tenants</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="subheader">Tenants</div>
+                        <div class="h1 mb-0">{{ summary.total_tenants }}</div>
+                        <div class="text-secondary">{{ summary.active_tenants }} active</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="subheader">Platform Users</div>
+                        <div class="h1 mb-0">{{ summary.total_users }}</div>
+                        <div class="text-secondary">{{ summary.active_memberships }} active memberships</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="subheader">Customer Records</div>
+                        <div class="h1 mb-0">{{ summary.total_customers }}</div>
+                        <div class="text-secondary">Active customer records</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="subheader">Revenue</div>
+                        <div class="h1 mb-0">{{ format_currency(summary.revenue) }}</div>
+                        <div class="text-secondary">Aggregated jobs revenue</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-0">Recent Tenants</h3>
+                            <div class="text-secondary">Latest tenant activity across the platform.</div>
+                        </div>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.tenants') }}">View all</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table card-table table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Subscription</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in recent_tenants %}
+                                <tr>
+                                    <td>{{ row.tenant.name|html_unescape }}</td>
+                                    <td>{{ row.tenant_type_label }}</td>
+                                    <td>{{ row.subscription_label }}</td>
+                                    <td>
+                                        <span class="badge {% if row.tenant.status == 'active' %}bg-success-lt{% elif row.tenant.status == 'suspended' %}bg-danger-lt{% else %}bg-warning-lt{% endif %}">
+                                            {{ row.tenant.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ row.tenant.created_at.strftime('%Y-%m-%d') if row.tenant.created_at else '' }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5" class="text-center text-secondary py-4">No tenants yet.</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-0">Recent Audit Activity</h3>
+                            <div class="text-secondary">Recent privileged and tenant-aware actions.</div>
+                        </div>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.audit') }}">Open log</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table card-table table-vcenter">
+                            <thead><tr><th>When</th><th>Action</th><th>Entity</th><th>User</th></tr></thead>
+                            <tbody>
+                            {% for row in recent_audit %}
+                                <tr>
+                                    <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '' }}</td>
+                                    <td>{{ row.action }}</td>
+                                    <td>{{ row.entity_type }}{% if row.entity_id %} #{{ row.entity_id }}{% endif %}</td>
+                                    <td>{{ row.user.username|html_unescape if row.user else 'System' }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-center text-secondary py-4">No audit events yet.</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-3">
+                    <div class="card-header"><h3 class="card-title mb-0">Quick Actions</h3></div>
+                    <div class="card-body p-2">
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-outline-primary justify-content-start" href="{{ url_for('admin.tenants') }}"><i class="ti ti-building me-2"></i>Manage tenants</a>
+                            <a class="btn btn-outline-primary justify-content-start" href="{{ url_for('admin.users') }}"><i class="ti ti-users me-2"></i>Manage users</a>
+                            <a class="btn btn-outline-primary justify-content-start" href="{{ url_for('admin.roles') }}"><i class="ti ti-shield-lock me-2"></i>Review roles</a>
+                            <a class="btn btn-outline-primary justify-content-start" href="{{ url_for('admin.audit') }}"><i class="ti ti-shield-check me-2"></i>Review audit log</a>
+                            <a class="btn btn-outline-primary justify-content-start" href="{{ url_for('platform.modules') }}"><i class="ti ti-layout-grid me-2"></i>Open administration</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title mb-0">Role Snapshot</h3></div>
+                    <div class="list-group list-group-flush">
+                        {% for role, count in top_roles %}
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span>{{ role|replace('_', ' ')|title }}</span>
+                                <strong>{{ count }}</strong>
+                            </div>
+                        {% else %}
+                            <div class="list-group-item text-secondary">No role data yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button class="sidebar-toggle d-lg-none" onclick="togglePlatformSidebar()" aria-label="Open sidebar menu"><i class="ti ti-layout-sidebar"></i></button>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+function togglePlatformSidebar() {
+    const sidebar = document.getElementById('platformSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('open');
+}
+</script>
+{% endblock %}

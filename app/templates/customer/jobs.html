@@ -1,0 +1,74 @@
+{% extends "base/layout.html" %}
+
+{% block title %}My Jobs - KarFix{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2 mb-1">Schedule a job</h1>
+      <div class="text-secondary">Choose a workshop, vehicle, and service date for your workshop visit.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary" href="{{ url_for('customer.history') }}">Service history</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('customer.dashboard') }}">Back to dashboard</a>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('customer.jobs') }}" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Workshop</label>
+          <select name="tenant_id" class="form-select" required>
+            {% for option in workshop_options %}
+              <option value="{{ option.tenant_id }}" {% if option.is_current %}selected{% endif %}>{{ option.tenant_name }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-hint">This workshop will be saved as your default for future bookings.</div>
+          {% if preferred_workshop %}<div class="mt-2 small text-secondary">Current default: <strong>{{ preferred_workshop.name }}</strong></div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Vehicle</label>
+          <select name="vehicle_id" class="form-select" {% if not vehicles %}disabled{% endif %}>
+            {% for vehicle in vehicles %}
+              <option value="{{ vehicle.vehicle_id }}">{{ vehicle.display_name }}</option>
+            {% endfor %}
+          </select>
+          {% if not vehicles %}<div class="form-hint">Add a vehicle first from the Vehicles page.</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Preferred date</label>
+          <input type="date" name="job_date" class="form-control" min="{{ min_date }}" required>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100" {% if not vehicles %}disabled{% endif %}>Submit request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3 class="card-title mb-0">My jobs</h3></div>
+    <div class="table-responsive">
+      <table class="table card-table table-vcenter">
+        <thead><tr><th>ID</th><th>Date</th><th>Vehicle</th><th>Mileage</th><th>Status</th><th>Amount</th></tr></thead>
+        <tbody>
+        {% for job in jobs %}
+          <tr>
+            <td><a href="{{ url_for('customer.job_detail', job_id=job.job_id) }}">#{{ job.job_id }}</a></td>
+            <td>{{ job.job_date }}</td>
+            <td>{{ job.vehicle_rel.display_name if job.vehicle_rel else 'No vehicle selected' }}</td>
+            <td>{{ job.mileage if job.mileage is not none else 'N/A' }}{% if job.mileage is not none %} km{% endif %}</td>
+            <td>{{ job.status_text }}</td>
+            <td>{{ format_currency(job.total_cost if job.total_cost is not none else 0) }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="text-center text-secondary py-4">No jobs found.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base/layout.html" %}
+{% block title %}Users - KarFix Platform Owner{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item"><a href="{{ url_for('admin.home') }}">Platform Dashboard</a></li><li class="breadcrumb-item active">Users</li>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title mb-0">Create User</h3></div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3"><label class="form-label">Username</label><input name="username" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">Email</label><input name="email" type="email" class="form-control"></div>
+          <div class="mb-3"><label class="form-label">Role</label><select name="role" class="form-select"><option value="customer">customer</option><option value="tenant_admin">tenant_admin</option><option value="platform_owner">platform_owner</option></select></div>
+          <div class="mb-3"><label class="form-label">Preferred Tenant</label><select name="preferred_tenant_id" class="form-select"><option value="">--</option>{% for tenant in tenants %}<option value="{{ tenant.tenant_id }}">{{ tenant.name }}</option>{% endfor %}</select></div>
+          <div class="mb-3"><label class="form-label">Customer Link</label><select name="customer_id" class="form-select"><option value="">--</option>{% for customer in customers %}<option value="{{ customer.customer_id }}">{{ customer.full_name }}</option>{% endfor %}</select></div>
+          <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="is_superadmin" id="createSuper"><label class="form-check-label" for="createSuper">Platform Owner</label></div>
+          <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="is_active" id="createActive" checked><label class="form-check-label" for="createActive">Active</label></div>
+          <button class="btn btn-primary" type="submit">Create user</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">User Directory</h3>
+        <form class="d-flex gap-2" method="get">
+          <select name="role" class="form-select form-select-sm"><option value="">All roles</option><option value="platform_owner" {% if role_filter in ['superadmin', 'platform_owner'] %}selected{% endif %}>platform_owner</option><option value="customer" {% if role_filter == 'customer' %}selected{% endif %}>customer</option><option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>admin</option></select>
+          <select name="status" class="form-select form-select-sm"><option value="">All status</option><option value="active" {% if status_filter == 'active' %}selected{% endif %}>active</option><option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>inactive</option></select>
+          <button class="btn btn-sm btn-outline-primary" type="submit">Filter</button>
+        </form>
+      </div>
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter">
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Tenant</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td colspan="6">
+                <form method="post" action="{{ url_for('admin.update_user', user_id=user.user_id) }}" class="row g-2 align-items-center">
+                  <div class="col-lg-2"><input class="form-control form-control-sm" name="username" value="{{ user.username }}"></div>
+                  <div class="col-lg-2"><input class="form-control form-control-sm" name="email" value="{{ user.email or '' }}"></div>
+                  <div class="col-lg-2"><select class="form-select form-select-sm" name="role"><option value="customer" {% if (user.role or '') == 'customer' %}selected{% endif %}>customer</option><option value="tenant_admin" {% if (user.role or '') == 'tenant_admin' %}selected{% endif %}>tenant_admin</option><option value="owner" {% if (user.role or '') == 'owner' %}selected{% endif %}>owner</option><option value="admin" {% if (user.role or '') == 'admin' %}selected{% endif %}>admin</option></select></div>
+                  <div class="col-lg-2"><select class="form-select form-select-sm" name="preferred_tenant_id"><option value="">--</option>{% for tenant in tenants %}<option value="{{ tenant.tenant_id }}" {% if user.preferred_tenant_id == tenant.tenant_id %}selected{% endif %}>{{ tenant.name }}</option>{% endfor %}</select></div>
+                  <div class="col-lg-1"><select class="form-select form-select-sm" name="customer_id"><option value="">--</option>{% for customer in customers %}<option value="{{ customer.customer_id }}" {% if user.customer_id == customer.customer_id %}selected{% endif %}>{{ customer.customer_id }}</option>{% endfor %}</select></div>
+                  <div class="col-lg-1 form-check ms-2"><input class="form-check-input" type="checkbox" name="is_superadmin" {% if user.is_superadmin %}checked{% endif %}><label class="form-check-label">Super</label></div>
+                  <div class="col-lg-1 form-check ms-2"><input class="form-check-input" type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %}><label class="form-check-label">Active</label></div>
+                  <div class="col-lg-1 text-end"><button class="btn btn-sm btn-primary" type="submit">Save</button></div>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-secondary py-4">No users found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Customer Dashboard - KarFix{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="hero-panel surface-hero mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div class="me-auto">
+        <div class="hero-eyebrow mb-2">Customer Portal</div>
+        <h1 class="hero-title mb-2">Welcome, {{ customer.full_name or customer.family_name }}</h1>
+        <p class="hero-subtitle mb-0">Manage your vehicles, follow repair history, and schedule work with your preferred workshop.</p>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <span class="badge bg-success-subtle text-success">Customer: {{ customer.full_name or customer.family_name }}</span>
+          {% if preferred_workshop %}
+            <span class="badge bg-primary-subtle text-primary">Preferred workshop: {{ preferred_workshop.name }}</span>
+          {% else %}
+            <span class="badge bg-warning-subtle text-warning">No preferred workshop selected</span>
+          {% endif %}
+          {% if primary_vehicle %}
+            <span class="badge bg-secondary-subtle text-secondary">Primary vehicle: {{ primary_vehicle.display_name }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-outline-primary" href="{{ url_for('customer.profile') }}">Update profile</a>
+        <a class="btn btn-primary" href="{{ url_for('customer.jobs') }}">Schedule job</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-2">
+      <div class="card stat-card"><div class="stat-copy"><div class="stat-label">Active jobs</div><div class="stat-value">{{ active_jobs }}</div></div><div class="stat-icon"><i class="ti ti-briefcase"></i></div></div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="card stat-card"><div class="stat-copy"><div class="stat-label">Vehicles</div><div class="stat-value">{{ stats.vehicle_count if stats else 0 }}</div></div><div class="stat-icon success"><i class="ti ti-car"></i></div></div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="card stat-card"><div class="stat-copy"><div class="stat-label">Upcoming</div><div class="stat-value">{{ upcoming_jobs_count }}</div></div><div class="stat-icon warning"><i class="ti ti-calendar-event"></i></div></div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="card stat-card"><div class="stat-copy"><div class="stat-label">Overdue bills</div><div class="stat-value">{{ overdue_count }}</div></div><div class="stat-icon warning"><i class="ti ti-bell"></i></div></div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="card stat-card"><div class="stat-copy"><div class="stat-label">Outstanding</div><div class="stat-value">{{ format_currency(stats.total_unpaid_amount if stats and stats.total_unpaid_amount is not none else 0) }}</div></div><div class="stat-icon"><i class="ti ti-credit-card"></i></div></div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="card stat-card"><div class="stat-copy"><div class="stat-label">Last service</div><div class="stat-value">{{ last_service_date.strftime('%d %b %Y') if last_service_date else '—' }}</div></div><div class="stat-icon neutral"><i class="ti ti-history"></i></div></div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Preferred workshop</h3>
+          <a href="{{ url_for('customer.profile') }}" class="btn btn-sm btn-outline-primary">Change</a>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('customer.set_preferred_workshop') }}" class="row g-3 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">Choose workshop</label>
+              <select name="tenant_id" class="form-select">
+                {% for option in workshop_options %}
+                  <option value="{{ option.tenant_id }}" {% if option.is_current %}selected{% endif %}>{{ option.tenant_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <button type="submit" class="btn btn-primary w-100">Set default</button>
+            </div>
+          </form>
+          <div class="text-secondary mt-3">This workshop opens by default when you log in and when you schedule a new job.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Quick actions</h3>
+          <a href="{{ url_for('customer.vehicles') }}" class="btn btn-sm btn-outline-primary">Manage vehicles</a>
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-sm-6"><a class="btn btn-outline-secondary w-100" href="{{ url_for('customer.jobs') }}">Schedule a job</a></div>
+            <div class="col-sm-6"><a class="btn btn-outline-secondary w-100" href="{{ url_for('customer.billing') }}">View bills</a></div>
+            <div class="col-sm-6"><a class="btn btn-outline-secondary w-100" href="{{ url_for('customer.invoices') }}">My invoices</a></div>
+            <div class="col-sm-6"><a class="btn btn-outline-secondary w-100" href="{{ url_for('customer.profile') }}">Edit profile</a></div>
+            <div class="col-sm-6"><a class="btn btn-outline-secondary w-100" href="{{ url_for('customer.vehicles') }}">Repair history</a></div>
+            <div class="col-sm-6"><a class="btn btn-outline-secondary w-100" href="{{ url_for('customer.history') }}">Service timeline</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Upcoming bookings</h3>
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('customer.jobs') }}">Request service</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table card-table table-vcenter mb-0">
+            <thead><tr><th>Date</th><th>Vehicle</th><th>Status</th><th>Total</th></tr></thead>
+            <tbody>
+            {% for job in upcoming_jobs %}
+              <tr>
+                <td><a href="{{ url_for('customer.job_detail', job_id=job.job_id) }}">{{ job.job_date.strftime('%d %b %Y') if job.job_date else '—' }}</a></td>
+                <td>{{ job.vehicle_rel.display_name if job.vehicle_rel else 'No vehicle selected' }}</td>
+                <td>{{ job.status_text }}</td>
+                <td>{{ format_currency(job.total_cost if job.total_cost is not none else 0) }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4" class="text-center text-secondary py-4">No upcoming bookings yet.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Vehicle overview</h3>
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('customer.vehicles') }}">Manage vehicles</a>
+        </div>
+        <div class="card-body">
+          {% for summary in vehicle_summaries %}
+            {% set vehicle = summary.vehicle %}
+            <div class="border rounded-4 p-3 mb-3 bg-white">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <div class="fw-semibold">{{ vehicle.display_name }}</div>
+                  <div class="text-secondary small">{{ vehicle.registration_number or 'No registration' }}{% if vehicle.mileage is not none %} • {{ vehicle.mileage }} km{% endif %}</div>
+                </div>
+                <div class="text-end">
+                  {% if vehicle.is_primary %}<span class="badge bg-primary mb-1">Primary</span>{% endif %}
+                  <div class="small text-secondary">{{ summary.maintenance_status }}</div>
+                </div>
+              </div>
+              <div class="small text-secondary mt-2">
+                Last service:
+                {% if summary.last_service_date %}
+                  {{ summary.last_service_date.strftime('%d %b %Y') }}
+                {% else %}
+                  No service history yet
+                {% endif %}
+              </div>
+              <div class="small text-secondary">Repair records: {{ summary.history_count }}</div>
+              <div class="mt-2 d-flex gap-2">
+                <a href="{{ url_for('customer.vehicles') }}" class="btn btn-sm btn-outline-primary">Manage</a>
+                <a href="{{ url_for('customer.jobs') }}" class="btn btn-sm btn-outline-secondary">Book service</a>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-secondary">No vehicles have been added yet.</div>
+            <a class="btn btn-primary mt-3" href="{{ url_for('customer.vehicles') }}">Add your first vehicle</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Recent jobs</h3>
+          <a href="{{ url_for('customer.history') }}" class="btn btn-sm btn-outline-primary">View history</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table card-table table-vcenter mb-0">
+            <thead><tr><th>Date</th><th>Vehicle</th><th>Status</th><th>Total</th></tr></thead>
+            <tbody>
+            {% for job in recent_jobs %}
+              <tr>
+                <td><a href="{{ url_for('customer.job_detail', job_id=job.job_id) }}">{{ job.job_date.strftime('%d %b %Y') if job.job_date else '—' }}</a></td>
+                <td>{{ job.vehicle_rel.display_name if job.vehicle_rel else 'No vehicle selected' }}</td>
+                <td>{{ job.status_text }}</td>
+                <td>{{ format_currency(job.total_cost if job.total_cost is not none else 0) }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4" class="text-center text-secondary py-4">No jobs yet.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header"><h3 class="card-title mb-0">Account summary</h3></div>
+        <div class="card-body">
+          <div class="mb-3"><div class="text-secondary small">Email</div><div class="fw-semibold">{{ customer.email }}</div></div>
+          <div class="mb-3"><div class="text-secondary small">Phone</div><div class="fw-semibold">{{ customer.phone or 'Not set' }}</div></div>
+          <div class="mb-3"><div class="text-secondary small">Preferred workshop</div><div class="fw-semibold">{{ preferred_workshop.name if preferred_workshop else 'Not selected' }}</div></div>
+          <div class="mb-3"><div class="text-secondary small">Primary vehicle</div><div class="fw-semibold">{{ primary_vehicle.display_name if primary_vehicle else 'Not selected' }}</div></div>
+          <div class="mb-0"><a href="{{ url_for('customer.profile') }}" class="btn btn-outline-primary w-100">Update customer details</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!-- Workshop Sidebar Navigation -->
+<aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <span>Workshop</span>
+            <small>{{ current_tenant.name if current_tenant else 'Operations Hub' }}</small>
+        </div>
+        <button class="sidebar-close d-lg-none" onclick="toggleAdminSidebar()" aria-label="Close sidebar">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('administrator.dashboard') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.dashboard') %}active{% endif %}">
+            <i class="ti ti-layout-dashboard sidebar-icon"></i><span class="sidebar-label">Dashboard</span>
+        </a>
+
+        <div class="sidebar-section-title">Operations</div>
+        <a href="{{ url_for('administrator.jobs') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.jobs') or request.endpoint == 'administrator.job_detail' %}active{% endif %}">
+            <i class="ti ti-briefcase sidebar-icon"></i><span class="sidebar-label">Jobs</span>
+        </a>
+        <a href="{{ url_for('administrator.bookings') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.bookings') %}active{% endif %}">
+            <i class="ti ti-calendar-event sidebar-icon"></i><span class="sidebar-label">Bookings</span>
+        </a>
+        <a href="{{ url_for('administrator.customer_list') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.customer_list') %}active{% endif %}">
+            <i class="ti ti-users sidebar-icon"></i><span class="sidebar-label">Customers</span>
+        </a>
+        <a href="{{ url_for('administrator.vehicles') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.vehicles') %}active{% endif %}">
+            <i class="ti ti-car sidebar-icon"></i><span class="sidebar-label">Vehicles</span>
+        </a>
+        <a href="{{ url_for('administrator.service_catalog') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.service_catalog') %}active{% endif %}">
+            <i class="ti ti-tools sidebar-icon"></i><span class="sidebar-label">Services</span>
+        </a>
+        <a href="{{ url_for('administrator.parts_catalog') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.parts_catalog') %}active{% endif %}">
+            <i class="ti ti-puzzle sidebar-icon"></i><span class="sidebar-label">Parts</span>
+        </a>
+
+        <div class="sidebar-section-title">Insights</div>
+        <a href="{{ url_for('administrator.analytics') }}" class="sidebar-link {% if request.endpoint and (request.endpoint.startswith('administrator.analytics') or request.endpoint.startswith('administrator.reports')) %}active{% endif %}">
+            <i class="ti ti-chart-bar sidebar-icon"></i><span class="sidebar-label">Analytics</span>
+        </a>
+        <a href="{{ url_for('administrator.billing_management') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.billing_management') or request.endpoint in ('administrator.billing_management', 'administrator.overdue_bills', 'administrator.pay_bills') %}active{% endif %}">
+            <i class="ti ti-credit-card sidebar-icon"></i><span class="sidebar-label">Billing</span>
+        </a>
+        <a href="{{ url_for('administrator.invoice_dashboard') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.invoice_dashboard') or request.endpoint in ('administrator.invoice_dashboard', 'administrator.invoice_detail') %}active{% endif %}">
+            <i class="ti ti-receipt sidebar-icon"></i><span class="sidebar-label">Invoices</span>
+        </a>
+
+        <div class="sidebar-section-title">Organization</div>
+        <a href="{{ url_for('administrator.team_members') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.team_members') %}active{% endif %}">
+            <i class="ti ti-users-group sidebar-icon"></i><span class="sidebar-label">Team Members</span>
+        </a>
+        <a href="{{ url_for('administrator.org_settings') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.org_settings') %}active{% endif %}">
+            <i class="ti ti-building sidebar-icon"></i><span class="sidebar-label">Org Settings</span>
+        </a>
+        <a href="{{ url_for('administrator.subscription_management') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.subscription_management') %}active{% endif %}">
+            <i class="ti ti-credit-card sidebar-icon"></i><span class="sidebar-label">Subscription</span>
+        </a>
+    </nav>
+</aside>
+
+<div class="sidebar-overlay d-lg-none" id="sidebarOverlay" onclick="toggleAdminSidebar()"></div>

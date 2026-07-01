@@ -1,0 +1,113 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Services - KarFix{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+    </li>
+    <li class="breadcrumb-item active">Services</li>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-gray-900 mb-2 d-flex align-items-center gap-2">
+            <i class="ti ti-tool text-primary"></i>
+            Services Catalog
+        </h1>
+        <p class="text-muted mb-0">Browse available repair and maintenance services</p>
+    </div>
+</div>
+
+<!-- Services Table -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="ti ti-list me-2"></i>
+            All Services
+        </h3>
+        <div class="card-actions">
+            <span class="text-muted">{{ services|length if services else 0 }} service{{ 's' if not services or services|length != 1 }}</span>
+        </div>
+    </div>
+
+    {% if services %}
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table" id="servicesTable">
+            <thead>
+                <tr>
+                    <th>Service Name</th>
+                    <th>Category</th>
+                    <th class="text-end">Cost</th>
+                    <th>Est. Duration</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for service in services %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3 d-flex align-items-center justify-content-center">
+                                <i class="ti ti-tool text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ service.service_name }}</div>
+                                {% if service.description %}
+                                <small class="text-muted">{{ service.description }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if service.category %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary">{{ service.category }}</span>
+                        {% else %}
+                        <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <span class="fw-semibold text-success">{{ format_currency(service.cost|float) }}</span>
+                    </td>
+                    <td>
+                        {% if service.est_duration %}
+                        <div class="d-flex align-items-center gap-1">
+                            <i class="ti ti-clock text-muted"></i>
+                            <span>{{ service.est_duration }}</span>
+                        </div>
+                        {% else %}
+                        <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if service.active is defined and not service.active %}
+                            <span class="badge bg-danger">
+                                <i class="ti ti-circle-x me-1"></i>
+                                Inactive
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success">
+                                <i class="ti ti-circle-check me-1"></i>
+                                Active
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty">
+        <div class="empty-icon"><i class="ti ti-tool"></i></div>
+        <p class="empty-title">No Services Available</p>
+        <p class="empty-subtitle text-secondary">
+            There are no services in the catalog at this time. Contact an administrator to add services.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

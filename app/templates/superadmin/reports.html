@@ -1,0 +1,15 @@
+{% extends "base/layout.html" %}
+{% block title %}Reports - KarFix Platform Owner{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item"><a href="{{ url_for('admin.home') }}">Platform Dashboard</a></li><li class="breadcrumb-item active">Reports</li>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Tenants</div><div class="h1 mb-0">{{ summary.total_tenants }}</div><div class="text-secondary">{{ summary.active_tenants }} active</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Jobs</div><div class="h1 mb-0">{{ summary.total_jobs }}</div><div class="text-secondary">All statuses</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Customers</div><div class="h1 mb-0">{{ summary.total_customers }}</div><div class="text-secondary">Platform total</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body"><div class="subheader">Revenue</div><div class="h1 mb-0">{{ format_currency(summary.total_revenue) }}</div><div class="text-secondary">Platform-wide</div></div></div></div>
+</div>
+<div class="card">
+  <div class="card-header"><h3 class="card-title mb-0">Jobs by Status</h3></div>
+  <div class="table-responsive"><table class="table card-table table-vcenter"><thead><tr><th>Status</th><th>Count</th></tr></thead><tbody>{% for status, count in monthly_jobs.items() %}<tr><td>{{ status.replace('_', ' ')|title }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

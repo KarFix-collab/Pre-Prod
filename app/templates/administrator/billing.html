@@ -1,0 +1,169 @@
+{% extends "base/layout_with_sidebar.html" %}
+{% block title %}Billing Management - Administrator Portal{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Billing</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+                        <i class="ti ti-credit-card text-primary"></i>
+                        Billing Management
+                    </h1>
+                    <p class="text-muted mb-0">View and reconcile tenant invoices and payments</p>
+                </div>
+                <a href="{{ url_for('administrator.invoice_dashboard') }}" class="btn btn-outline-primary">
+                    <i class="ti ti-file-text me-1"></i>
+                    Invoice dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4 g-3">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center mb-2"><span class="badge bg-primary-lt me-2"><i class="ti ti-file-text"></i></span><div class="subheader">Total invoices</div></div>
+                <div class="h1 mb-0">{{ billing_stats.total_bills|default(0) }}</div>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center mb-2"><span class="badge bg-success-lt me-2"><i class="ti ti-circle-check"></i></span><div class="subheader">Paid</div></div>
+                <div class="h1 mb-0">{{ format_currency(billing_stats.total_paid|default(0)|float) }}</div>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center mb-2"><span class="badge bg-warning-lt me-2"><i class="ti ti-clock"></i></span><div class="subheader">Outstanding</div></div>
+                <div class="h1 mb-0">{{ format_currency(billing_stats.total_unpaid|default(0)|float) }}</div>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card"><div class="card-body">
+                <div class="d-flex align-items-center mb-2"><span class="badge bg-danger-lt me-2"><i class="ti ti-alert-triangle"></i></span><div class="subheader">Overdue</div></div>
+                <div class="h1 mb-0">{{ format_currency(billing_stats.total_overdue|default(0)|float) }}</div>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <ul class="nav nav-pills">
+                            <li class="nav-item"><a class="nav-link {% if not filter_type or filter_type == 'all' %}active{% endif %}" href="{{ url_for('administrator.billing_management', filter='all', customer=customer_name if customer_name else None) }}">All</a></li>
+                            <li class="nav-item"><a class="nav-link {% if filter_type == 'unpaid' %}active{% endif %}" href="{{ url_for('administrator.billing_management', filter='unpaid', customer=customer_name if customer_name else None) }}"><i class="ti ti-clock me-1"></i>Unpaid</a></li>
+                            <li class="nav-item"><a class="nav-link {% if filter_type == 'overdue' %}active{% endif %}" href="{{ url_for('administrator.billing_management', filter='overdue', customer=customer_name if customer_name else None) }}"><i class="ti ti-alert-triangle me-1"></i>Overdue</a></li>
+                        </ul>
+
+                        <form method="get" class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="filter" value="{{ filter_type }}">
+                            <select class="form-select form-select-sm" name="customer" onchange="this.form.submit()" style="min-width: 220px;">
+                                <option value="">All Customers</option>
+                                {% for name in customer_names|default([]) %}
+                                <option value="{{ name }}" {% if customer_name == name %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white;">
+                    <h5 class="card-title mb-0 d-flex align-items-center gap-2" style="color: white;">
+                        <i class="ti ti-receipt"></i>
+                        Invoices
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Customer</th>
+                                    <th>Issued</th>
+                                    <th>Due</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in invoices|default([]) %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <a class="fw-bold" href="{{ url_for('administrator.invoice_detail', invoice_id=invoice.invoice_id) }}">{{ invoice.invoice_number }}</a>
+                                            <span class="text-muted small">Job #{{ invoice.job_id }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="ti ti-user text-primary me-2"></i>
+                                            <div>
+                                                <strong>{{ invoice.customer_name_display }}</strong>
+                                                <small class="text-muted d-block">{{ invoice.customer_email_display }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ invoice.issued_at.strftime('%d %b %Y') if invoice.issued_at else '—' }}</td>
+                                    <td>{{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else '—' }}</td>
+                                    <td><strong>{{ format_currency(invoice.total_amount|default(0)|float) }}</strong></td>
+                                    <td>
+                                        {% if invoice.status == 'paid' %}
+                                        <span class="badge bg-success">Paid</span>
+                                        {% elif invoice.is_overdue %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        {% elif invoice.status == 'sent' %}
+                                        <span class="badge bg-primary">Outstanding</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('administrator.invoice_detail', invoice_id=invoice.invoice_id) }}">Open</a>
+                                            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('administrator.invoice_download', invoice_id=invoice.invoice_id) }}">Download</a>
+                                            {% if invoice.status != 'paid' %}
+                                            <form method="post" action="{{ url_for('administrator.mark_paid') }}" class="d-inline">
+                                                <input type="hidden" name="invoice_id" value="{{ invoice.invoice_id }}">
+                                                <input type="hidden" name="return_page" value="billing">
+                                                <button type="submit" class="btn btn-sm btn-success">Mark paid</button>
+                                            </form>
+                                            {% else %}
+                                            <span class="text-muted align-self-center">Settled</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="ti ti-inbox mb-2 d-block mx-auto" style="font-size: 48px;"></i>
+                                        No invoices found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

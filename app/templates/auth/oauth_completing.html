@@ -1,0 +1,99 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Completing Sign In - KarFix{% endblock %}
+
+{% block breadcrumb %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="col-lg-4 col-md-6 text-center">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-5">
+                <div class="mb-4">
+                    <div class="spinner-border text-primary" role="status" id="loadingSpinner">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-2" id="statusTitle">Completing sign in...</h3>
+                <p class="text-muted" id="statusMessage">Please wait while we set up your session.</p>
+
+                <div id="errorActions" class="d-none mt-4">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-accent">
+                        <i class="ti ti-arrow-left me-2"></i>Back to Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const statusTitle = document.getElementById('statusTitle');
+    const statusMessage = document.getElementById('statusMessage');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorActions = document.getElementById('errorActions');
+    const backLink = errorActions.querySelector('a');
+
+    const params = new URLSearchParams(window.location.search);
+    const errorCode = params.get('error_code');
+    const errorDescription = params.get('error_description') || params.get('error');
+
+    function showError(message) {
+        loadingSpinner.classList.add('d-none');
+        statusTitle.textContent = 'Sign in failed';
+        statusMessage.textContent = message;
+        backLink.textContent = 'Back to Sign In';
+        backLink.href = '{{ url_for("auth.login") }}?error=confirmation_expired';
+        errorActions.classList.remove('d-none');
+    }
+
+    function showSuccess(message) {
+        loadingSpinner.classList.add('d-none');
+        statusTitle.textContent = 'Email confirmed';
+        statusMessage.textContent = message;
+        backLink.textContent = 'Back to Sign In';
+        backLink.href = '{{ url_for("auth.login") }}?confirmed=1';
+        errorActions.classList.remove('d-none');
+    }
+
+    if (!window.supabaseAuth) {
+        showError('Authentication service not configured. Please try again.');
+        return;
+    }
+
+    // Complete the Supabase redirect if this is an OAuth / magic-link flow.
+    // The shared JS helper also handles email-link callbacks that arrive as
+    // token_hash/type query parameters, so we only need to react to its result
+    // here.
+    try {
+        const result = await window.supabaseAuth.handleCallback();
+
+        if (result && result.success) {
+            window.location.href = result.redirect || '/dashboard';
+            return;
+        }
+
+        if (errorCode === 'otp_expired' || /expired/i.test(errorDescription || '')) {
+            showError('This confirmation link has expired. Please return to sign in and request a fresh email.');
+            return;
+        }
+
+        if (errorCode || errorDescription) {
+            showError(errorDescription || 'The confirmation link could not be used. Please try again.');
+            return;
+        }
+
+        showSuccess('Your email has been verified. Please sign in with your password.');
+        setTimeout(() => {
+            window.location.href = '{{ url_for("auth.login") }}?confirmed=1';
+        }, 1800);
+    } catch (error) {
+        console.error('OAuth completion error:', error);
+        showError('An error occurred. Please try again.');
+    }
+});
+</script>
+{% endblock %}

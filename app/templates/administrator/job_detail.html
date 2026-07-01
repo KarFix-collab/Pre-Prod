@@ -1,0 +1,290 @@
+{% extends "base/layout.html" %}
+{% block title %}Job #{{ data.job_id }} - Workshop Administration{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('administrator.dashboard') }}">Workshop Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('administrator.jobs') }}">Jobs</a></li>
+<li class="breadcrumb-item active">Job #{{ data.job_id }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="h3 mb-1 d-flex align-items-center gap-2">
+            <i class="ti ti-file-text text-primary"></i>
+            Job #{{ data.job_id }}
+        </h1>
+        <p class="text-secondary mb-0">{{ data.status_text }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('administrator.jobs') }}" class="btn btn-outline-secondary">Back to jobs</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><h3 class="card-title mb-0">Workflow</h3></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="text-secondary small">Status</div>
+                    <div class="fw-semibold">{{ data.status_text }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-secondary small">Technician</div>
+                    <div class="fw-semibold">{{ data.assigned_technician_name or 'Unassigned' }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-secondary small">Notes</div>
+                    <div>{{ data.internal_notes or 'No internal notes yet.' }}</div>
+                </div>
+
+                <form method="post" action="{{ url_for('administrator.update_job_status', job_id=data.job_id) }}" class="mb-3">
+                    <label class="form-label">Update Status</label>
+                    <select name="status" class="form-select mb-2">
+                        {% for status, label in status_options.items() %}
+                        <option value="{{ status }}" {% if data.status == status %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <textarea name="note" class="form-control mb-2" rows="2" placeholder="Optional status note"></textarea>
+                    <button class="btn btn-primary w-100" type="submit">Save status</button>
+                </form>
+
+                {% if not job_completed %}
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <form method="post" action="{{ url_for('administrator.update_job_status', job_id=data.job_id) }}">
+                            <input type="hidden" name="status" value="cancelled">
+                            <input type="hidden" name="note" value="Cancelled by workshop">
+                            <button class="btn btn-outline-danger w-100" type="submit" onclick="return confirm('Cancel this job?')">Cancel job</button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="post" action="{{ url_for('administrator.update_job_status', job_id=data.job_id) }}">
+                            <input type="hidden" name="status" value="rejected">
+                            <input type="hidden" name="note" value="Rejected by workshop">
+                            <button class="btn btn-outline-warning w-100" type="submit" onclick="return confirm('Reject this scheduled job?')">Reject job</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" action="{{ url_for('administrator.assign_job_technician', job_id=data.job_id) }}" class="mb-3">
+                    <label class="form-label">Assign Technician</label>
+                    <select name="technician_id" class="form-select mb-2">
+                        <option value="">Unassigned</option>
+                        {% for tech in available_technicians %}
+                        <option value="{{ tech.user_id }}" {% if data.assigned_to == tech.user_id %}selected{% endif %}>{{ tech.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-outline-primary w-100" type="submit">Update assignment</button>
+                </form>
+
+                <form method="post" action="{{ url_for('administrator.add_job_note', job_id=data.job_id) }}">
+                    <label class="form-label">Internal Note</label>
+                    <textarea name="note" class="form-control mb-2" rows="3" placeholder="Add an internal note"></textarea>
+                    <button class="btn btn-outline-secondary w-100" type="submit">Add note</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title mb-0">Customer & Vehicle</h3></div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-secondary small">Customer</div>
+                        <div class="fw-semibold">{{ data.first_name }} {{ data.family_name }}</div>
+                        <div class="text-secondary small">ID #{{ data.customer_id }}</div>
+                        <div class="text-secondary">{{ data.email or '' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-secondary small">Vehicle</div>
+                        <div class="fw-semibold">{{ data.vehicle_display_name or 'No vehicle selected' }}</div>
+                        <div class="text-secondary small">Registration: {{ data.registration_number or '—' }}</div>
+                        <div class="text-secondary small">Mileage: {{ data.mileage if data.mileage is not none else '—' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title mb-0">Status History</h3></div>
+            <div class="card-body">
+                {% if status_history %}
+                <div class="list-group list-group-flush">
+                    {% for entry in status_history %}
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">{{ entry.old_status or 'new' }} → {{ entry.new_status }}</div>
+                                <div class="text-secondary small">{{ entry.note or 'No note' }}</div>
+                            </div>
+                            <small class="text-secondary">{{ entry.created_at or '' }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-secondary">No status history recorded yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h3 class="card-title mb-0">Services & Parts Workbench</h3>
+                <span class="badge bg-primary-lt text-primary">{{ services|length }} services · {{ parts|length }} parts</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded bg-light h-100">
+                            <div class="text-secondary small">Estimated services total</div>
+                            <div class="fs-4 fw-semibold">{{ format_currency(services_total|float) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded bg-light h-100">
+                            <div class="text-secondary small">Estimated parts total</div>
+                            <div class="fs-4 fw-semibold">{{ format_currency(parts_total|float) }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <h6 class="mb-3 text-primary">Add Service</h6>
+                        <form method="POST" action="{{ url_for('administrator.add_job_service', job_id=data.job_id) }}" class="mb-4">
+                            <div class="mb-2">
+                                <label class="form-label">Service</label>
+                                <select name="service_id" class="form-select" {% if job_completed %}disabled{% endif %} required>
+                                    <option value="">Select a service...</option>
+                                    {% for service in all_services %}
+                                    <option value="{{ service.service_id }}">{{ service.service_name }} - {{ format_currency(service.cost|float) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" min="1" value="1" name="quantity" class="form-control" {% if job_completed %}disabled{% endif %} required>
+                                </div>
+                                <div class="col-6 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" type="submit" {% if job_completed %}disabled{% endif %}>Add Service</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <h6 class="mb-3 text-secondary">Current Services</h6>
+                        {% if services %}
+                        <div class="list-group">
+                            {% for service in services %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ service.service_name }}</div>
+                                        <div class="text-secondary small">Unit: {{ format_currency(service.cost|float) }} · Line: {{ format_currency(service.total_cost|float) }}</div>
+                                    </div>
+                                    <span class="badge bg-info">{{ service.qty }}</span>
+                                </div>
+                                <form method="POST" action="{{ url_for('administrator.update_job_service', job_id=data.job_id) }}" class="row g-2 align-items-end">
+                                    <input type="hidden" name="service_id" value="{{ service.service_id }}">
+                                    <div class="col-5">
+                                        <label class="form-label small mb-1">Quantity</label>
+                                        <input type="number" name="quantity" min="0" value="{{ service.qty }}" class="form-control form-control-sm" {% if job_completed %}disabled{% endif %}>
+                                    </div>
+                                    <div class="col-7 d-flex gap-2 justify-content-end">
+                                        <button class="btn btn-sm btn-primary" type="submit" {% if job_completed %}disabled{% endif %}>Save</button>
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" formaction="{{ url_for('administrator.remove_job_service', job_id=data.job_id) }}" {% if job_completed %}disabled{% endif %}>Remove</button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-secondary">No services added.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-lg-6">
+                        <h6 class="mb-3 text-primary">Add Part</h6>
+                        <form method="POST" action="{{ url_for('administrator.add_job_part', job_id=data.job_id) }}" class="mb-4">
+                            <div class="mb-2">
+                                <label class="form-label">Part</label>
+                                <select name="part_id" class="form-select" {% if job_completed %}disabled{% endif %} required>
+                                    <option value="">Select a part...</option>
+                                    {% for part in all_parts %}
+                                    <option value="{{ part.part_id }}">{{ part.part_name }} - {{ format_currency(part.cost|float) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" min="1" value="1" name="quantity" class="form-control" {% if job_completed %}disabled{% endif %} required>
+                                </div>
+                                <div class="col-6 d-flex align-items-end">
+                                    <button class="btn btn-success w-100" type="submit" {% if job_completed %}disabled{% endif %}>Add Part</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <h6 class="mb-3 text-secondary">Current Parts</h6>
+                        {% if parts %}
+                        <div class="list-group">
+                            {% for part in parts %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ part.part_name }}</div>
+                                        <div class="text-secondary small">Unit: {{ format_currency(part.cost|float) }} · Line: {{ format_currency(part.total_cost|float) }}</div>
+                                    </div>
+                                    <span class="badge bg-success">{{ part.qty }}</span>
+                                </div>
+                                <form method="POST" action="{{ url_for('administrator.update_job_part', job_id=data.job_id) }}" class="row g-2 align-items-end">
+                                    <input type="hidden" name="part_id" value="{{ part.part_id }}">
+                                    <div class="col-5">
+                                        <label class="form-label small mb-1">Quantity</label>
+                                        <input type="number" name="quantity" min="0" value="{{ part.qty }}" class="form-control form-control-sm" {% if job_completed %}disabled{% endif %}>
+                                    </div>
+                                    <div class="col-7 d-flex gap-2 justify-content-end">
+                                        <button class="btn btn-sm btn-primary" type="submit" {% if job_completed %}disabled{% endif %}>Save</button>
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" formaction="{{ url_for('administrator.remove_job_part', job_id=data.job_id) }}" {% if job_completed %}disabled{% endif %}>Remove</button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-secondary">No parts added.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title mb-0">Attachments / Photos</h3></div>
+            <div class="card-body">
+                {% if attachments %}
+                <div class="list-group list-group-flush">
+                    {% for attachment in attachments %}
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold">{{ attachment.filename }}</div>
+                            <div class="text-secondary small">{{ attachment.caption or attachment.mime_type or 'Attachment' }}</div>
+                        </div>
+                        <a href="{{ attachment.file_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Open</a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-secondary">No attachments uploaded.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

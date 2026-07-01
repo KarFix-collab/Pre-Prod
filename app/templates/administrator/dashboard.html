@@ -1,0 +1,196 @@
+{% extends "base/layout_with_sidebar.html" %}
+{% block title %}Workshop Dashboard - KarFix{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Workshop Dashboard</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="hero-panel surface-hero mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div class="me-auto">
+                <div class="hero-eyebrow mb-2">Workshop Operations</div>
+                <h1 class="hero-title mb-2">Workshop Dashboard</h1>
+                <p class="hero-subtitle mb-0">Tenant-scoped operations, bookings, jobs, customers, and vehicles in one modern workspace.</p>
+            </div>
+            <div class="hero-actions">
+                <a href="{{ url_for('administrator.bookings') }}" class="btn btn-primary">
+                    <i class="ti ti-calendar-plus me-1"></i>New Booking
+                </a>
+                <a href="{{ url_for('administrator.jobs') }}" class="btn btn-outline-primary">
+                    <i class="ti ti-briefcase me-1"></i>Active Jobs
+                </a>
+                <a href="{{ url_for('administrator.customer_list') }}" class="btn btn-outline-secondary">
+                    <i class="ti ti-users me-1"></i>Customers
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card">
+                <div class="stat-copy">
+                    <div class="stat-label">Customers</div>
+                    <div class="stat-value">{{ total_customers|default(0) }}</div>
+                    <div class="stat-note">Managed in this workshop</div>
+                </div>
+                <div class="stat-icon"><i class="ti ti-users"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card">
+                <div class="stat-copy">
+                    <div class="stat-label">Vehicles</div>
+                    <div class="stat-value">{{ total_vehicles|default(0) }}</div>
+                    <div class="stat-note">Service history visible</div>
+                </div>
+                <div class="stat-icon success"><i class="ti ti-car"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card">
+                <div class="stat-copy">
+                    <div class="stat-label">Active Jobs</div>
+                    <div class="stat-value">{{ active_jobs_count|default(0) }}</div>
+                    <div class="stat-note">In progress / awaiting parts</div>
+                </div>
+                <div class="stat-icon warning"><i class="ti ti-briefcase"></i></div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card">
+                <div class="stat-copy">
+                    <div class="stat-label">Bookings</div>
+                    <div class="stat-value">{{ booking_count|default(0) }}</div>
+                    <div class="stat-note">Drafts and upcoming jobs</div>
+                </div>
+                <div class="stat-icon neutral"><i class="ti ti-calendar-event"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Job Workflow</h3>
+                    <a href="{{ url_for('administrator.jobs') }}" class="btn btn-sm btn-outline-primary">View all jobs</a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for status, label in [('draft', 'Draft'), ('in_progress', 'In Progress'), ('awaiting_parts', 'Awaiting Parts'), ('completed', 'Completed'), ('delivered', 'Delivered'), ('cancelled', 'Cancelled'), ('rejected', 'Rejected')] %}
+                        <div class="col-6 col-xl-4">
+                            <div class="card h-100">
+                                <div class="card-body stat-card" style="min-height: 96px; padding: 1rem;">
+                                    <div class="stat-copy">
+                                        <div class="stat-label">{{ label }}</div>
+                                        <div class="stat-value">{{ status_summary.get(status, 0) }}</div>
+                                    </div>
+                                    <div class="stat-icon"><i class="ti ti-activity"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Bookings Queue</h3>
+                    <a href="{{ url_for('administrator.bookings') }}" class="btn btn-sm btn-outline-primary">Manage bookings</a>
+                </div>
+                <div class="card-body">
+                    {% if bookings %}
+                    <div class="list-group list-group-flush">
+                        {% for job in bookings %}
+                        <a class="list-group-item list-group-item-action px-0" href="{{ url_for('administrator.job_detail', job_id=job.job_id) }}">
+                            <div class="d-flex justify-content-between align-items-center gap-3">
+                                <div>
+                                    <div class="fw-semibold">Job #{{ job.job_id }} - {{ job.first_name }} {{ job.family_name }}</div>
+                                    <small class="text-muted">{{ job.job_date }}{% if job.vehicle_display_name %} · {{ job.vehicle_display_name }}{% endif %}</small>
+                                </div>
+                                <span class="badge bg-warning-lt text-warning">{{ job.status_text }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-muted">No pending bookings.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Active Jobs</h3>
+                    <a href="{{ url_for('administrator.jobs') }}" class="btn btn-sm btn-outline-primary">View job board</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table card-table table-vcenter mb-0">
+                        <thead>
+                            <tr>
+                                <th>Job</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Workshop Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in active_jobs %}
+                            <tr>
+                                <td><a href="{{ url_for('administrator.job_detail', job_id=job.job_id) }}">#{{ job.job_id }}</a></td>
+                                <td>{{ job.first_name }} {{ job.family_name }}</td>
+                                <td><span class="badge bg-info-lt text-info">{{ job.status_text }}</span></td>
+                                <td>{{ job.job_date }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-muted">No active jobs found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Customers & Vehicles</h3>
+                    <a href="{{ url_for('administrator.vehicles') }}" class="btn btn-sm btn-outline-primary">View vehicles</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table card-table table-vcenter mb-0">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Vehicles</th>
+                                <th>Jobs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in customer_rows|default([]) %}
+                            <tr>
+                                <td><a href="{{ url_for('main.customer_detail', customer_id=customer.customer_id) }}">{{ customer.full_name or customer.first_name ~ ' ' ~ customer.family_name }}</a></td>
+                                <td>{{ customer.vehicle_count }}</td>
+                                <td>{{ customer.job_count }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-muted">No customers found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

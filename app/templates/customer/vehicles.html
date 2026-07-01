@@ -1,0 +1,113 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Vehicles - KarFix{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2 mb-1">My vehicles</h1>
+      <div class="text-secondary">Add, update, or remove the vehicles linked to your workshop profile.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary" href="{{ url_for('customer.history') }}">Service history</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('customer.dashboard') }}">Dashboard</a>
+      <a class="btn btn-primary" href="{{ url_for('customer.jobs') }}">Schedule job</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title mb-0">Add vehicle</h3></div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('customer.vehicles') }}" class="row g-3">
+            <div class="col-12"><label class="form-label">Make</label><input type="text" name="make" class="form-control" required></div>
+            <div class="col-12"><label class="form-label">Model</label><input type="text" name="model" class="form-control" required></div>
+            <div class="col-6"><label class="form-label">Year</label><input type="number" name="year" class="form-control"></div>
+            <div class="col-6"><label class="form-label">Mileage</label><input type="number" name="mileage" class="form-control"></div>
+            <div class="col-12"><label class="form-label">Registration</label><input type="text" name="registration_number" class="form-control"></div>
+            <div class="col-12"><label class="form-label">VIN</label><input type="text" name="vin" class="form-control"></div>
+            <div class="col-12"><label class="form-label">Color</label><input type="text" name="color" class="form-control"></div>
+            <div class="col-12"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="3"></textarea></div>
+            <div class="col-12 form-check ms-1">
+              <input class="form-check-input" type="checkbox" name="is_primary" id="is_primary">
+              <label class="form-check-label" for="is_primary">Set as primary vehicle</label>
+            </div>
+            <div class="col-12"><button type="submit" class="btn btn-primary w-100">Add vehicle</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      {% for vehicle in vehicles %}
+        {% set history = vehicle_histories[vehicle.vehicle_id] if vehicle_histories and vehicle.vehicle_id in vehicle_histories else [] %}
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+              <h3 class="card-title mb-0">{{ vehicle.display_name }}</h3>
+              <div class="text-secondary small">{{ vehicle.registration_number or 'No registration' }}</div>
+            </div>
+            {% if vehicle.is_primary %}<span class="badge bg-primary">Primary</span>{% endif %}
+          </div>
+          <div class="card-body">
+            <form method="POST" action="{{ url_for('customer.update_vehicle', vehicle_id=vehicle.vehicle_id) }}" class="row g-3">
+              <div class="col-md-6"><label class="form-label">Make</label><input type="text" name="make" class="form-control" value="{{ vehicle.make or '' }}" required></div>
+              <div class="col-md-6"><label class="form-label">Model</label><input type="text" name="model" class="form-control" value="{{ vehicle.model or '' }}" required></div>
+              <div class="col-md-3"><label class="form-label">Year</label><input type="number" name="year" class="form-control" value="{{ vehicle.year or '' }}"></div>
+              <div class="col-md-3"><label class="form-label">Mileage</label><input type="number" name="mileage" class="form-control" value="{{ vehicle.mileage if vehicle.mileage is not none else '' }}"></div>
+              <div class="col-md-6"><label class="form-label">Registration</label><input type="text" name="registration_number" class="form-control" value="{{ vehicle.registration_number or '' }}"></div>
+              <div class="col-md-6"><label class="form-label">VIN</label><input type="text" name="vin" class="form-control" value="{{ vehicle.vin or '' }}"></div>
+              <div class="col-md-6"><label class="form-label">Color</label><input type="text" name="color" class="form-control" value="{{ vehicle.color or '' }}"></div>
+              <div class="col-12"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="2">{{ vehicle.notes or '' }}</textarea></div>
+              <div class="col-12 form-check ms-1">
+                <input class="form-check-input" type="checkbox" name="is_primary" id="is_primary_{{ vehicle.vehicle_id }}" {% if vehicle.is_primary %}checked{% endif %}>
+                <label class="form-check-label" for="is_primary_{{ vehicle.vehicle_id }}">Set as primary vehicle</label>
+              </div>
+              <div class="col-12 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Update vehicle</button>
+              </div>
+            </form>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              {% if not vehicle.is_primary %}
+              <form method="POST" action="{{ url_for('customer.set_primary_vehicle', vehicle_id=vehicle.vehicle_id) }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Make primary</button>
+              </form>
+              {% endif %}
+              <form method="POST" action="{{ url_for('customer.delete_vehicle', vehicle_id=vehicle.vehicle_id) }}" onsubmit="return confirm('Delete this vehicle?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+              </form>
+            </div>
+
+            <div class="mt-4">
+              <h4 class="h6 text-uppercase text-secondary">Repair history</h4>
+              {% if history %}
+                <div class="table-responsive">
+                  <table class="table table-sm table-vcenter mb-0">
+                    <thead><tr><th>Date</th><th>Mileage</th><th>Status</th><th>Total</th></tr></thead>
+                    <tbody>
+                      {% for job in history %}
+                        <tr>
+                          <td>{{ job.job_date }}</td>
+                          <td>{{ job.mileage if job.mileage is not none else 'N/A' }}{% if job.mileage is not none %} km{% endif %}</td>
+                          <td>{{ job.status_text }}</td>
+                          <td>{{ format_currency(job.total_cost if job.total_cost is not none else 0) }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="text-secondary">No repair history yet for this vehicle.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="card"><div class="card-body text-secondary">No vehicles have been added yet.</div></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

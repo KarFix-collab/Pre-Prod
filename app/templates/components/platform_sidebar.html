@@ -1,0 +1,70 @@
+<aside class="platform-sidebar" id="platformSidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <span class="sidebar-brand-title">Platform Owner</span>
+            <span class="sidebar-brand-subtitle">KarFix Control Plane</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('platform.home') }}" class="sidebar-link {% if request.endpoint == 'platform.home' %}active{% endif %}">
+            <i class="ti ti-layout-dashboard sidebar-icon"></i><span class="sidebar-label">Dashboard</span>
+        </a>
+        <a href="{{ url_for('platform.modules') }}" class="sidebar-link {% if request.endpoint == 'platform.modules' %}active{% endif %}">
+            <i class="ti ti-layout-grid sidebar-icon"></i><span class="sidebar-label">Platform Administration</span>
+        </a>
+
+        <div class="sidebar-section-title">Operations</div>
+        <a href="{{ url_for('admin.tenants') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('admin.tenants') %}active{% endif %}">
+            <i class="ti ti-building sidebar-icon"></i><span class="sidebar-label">Tenants</span>
+        </a>
+        <a href="#" class="sidebar-link" aria-disabled="true" tabindex="-1" style="opacity:.55; pointer-events:none;">
+            <i class="ti ti-building-skyscraper sidebar-icon"></i><span class="sidebar-label">Franchises</span>
+            <span class="badge bg-secondary-lt ms-auto">Soon</span>
+        </a>
+        <a href="#" class="sidebar-link" aria-disabled="true" tabindex="-1" style="opacity:.55; pointer-events:none;">
+            <i class="ti ti-tools sidebar-icon"></i><span class="sidebar-label">Workshops</span>
+            <span class="badge bg-secondary-lt ms-auto">Soon</span>
+        </a>
+        <a href="#" class="sidebar-link" aria-disabled="true" tabindex="-1" style="opacity:.55; pointer-events:none;">
+            <i class="ti ti-truck sidebar-icon"></i><span class="sidebar-label">Enterprise Fleets</span>
+            <span class="badge bg-secondary-lt ms-auto">Soon</span>
+        </a>
+
+        <div class="sidebar-section-title">Identity</div>
+        <a href="{{ url_for('admin.users') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('admin.users') %}active{% endif %}">
+            <i class="ti ti-users sidebar-icon"></i><span class="sidebar-label">Users</span>
+        </a>
+        <a href="{{ url_for('admin.roles') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('admin.roles') %}active{% endif %}">
+            <i class="ti ti-shield-lock sidebar-icon"></i><span class="sidebar-label">Roles</span>
+        </a>
+        <a href="#" class="sidebar-link" aria-disabled="true" tabindex="-1" style="opacity:.55; pointer-events:none;">
+            <i class="ti ti-key sidebar-icon"></i><span class="sidebar-label">Permissions</span>
+            <span class="badge bg-secondary-lt ms-auto">Soon</span>
+        </a>
+
+        <div class="sidebar-section-title">Commercial</div>
+        <a href="{{ url_for('administrator.subscription_management') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.subscription_management') %}active{% endif %}">
+            <i class="ti ti-credit-card sidebar-icon"></i><span class="sidebar-label">Subscription Plans</span>
+        </a>
+        <a href="{{ url_for('administrator.billing_management') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.billing_management') %}active{% endif %}">
+            <i class="ti ti-receipt-2 sidebar-icon"></i><span class="sidebar-label">Billing</span>
+        </a>
+        <a href="{{ url_for('administrator.invoices') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.invoices') %}active{% endif %}">
+            <i class="ti ti-file-invoice sidebar-icon"></i><span class="sidebar-label">Invoices</span>
+        </a>
+
+        <div class="sidebar-section-title">Governance</div>
+        <a href="{{ url_for('admin.reports') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('admin.reports') %}active{% endif %}">
+            <i class="ti ti-chart-bar sidebar-icon"></i><span class="sidebar-label">Analytics</span>
+        </a>
+        <a href="{{ url_for('admin.audit') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('admin.audit') %}active{% endif %}">
+            <i class="ti ti-shield-check sidebar-icon"></i><span class="sidebar-label">Audit</span>
+        </a>
+        <a href="{{ url_for('administrator.org_settings') }}" class="sidebar-link {% if request.endpoint and request.endpoint.startswith('administrator.org_settings') %}active{% endif %}">
+            <i class="ti ti-settings sidebar-icon"></i><span class="sidebar-label">Configuration</span>
+        </a>
+    </nav>
+</aside>
+
+<div class="sidebar-overlay d-lg-none" id="sidebarOverlay" onclick="togglePlatformSidebar()"></div>

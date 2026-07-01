@@ -1,0 +1,114 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Job #{{ job.job_id }} - KarFix{% endblock %}
+
+{% block content %}
+<div class="container-xl py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+      <h1 class="h2 mb-1">Job #{{ job.job_id }}</h1>
+      <div class="text-secondary">{{ job.job_date.strftime('%d %b %Y') if job.job_date else 'No date' }} • {{ job.status_text }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary" href="{{ url_for('customer.history') }}">Back to history</a>
+      <a class="btn btn-primary" href="{{ url_for('customer.jobs') }}">Book another job</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><h3 class="card-title mb-0">Job summary</h3></div>
+        <div class="card-body">
+          <div class="mb-3"><div class="text-secondary small">Vehicle</div><div class="fw-semibold">{{ job.vehicle_rel.display_name if job.vehicle_rel else 'No vehicle selected' }}</div></div>
+          <div class="mb-3"><div class="text-secondary small">Workshop</div><div class="fw-semibold">{{ job.tenant.name if job.tenant else '—' }}</div></div>
+          <div class="mb-3"><div class="text-secondary small">Mileage</div><div class="fw-semibold">{{ job.mileage if job.mileage is not none else 'N/A' }}{% if job.mileage is not none %} km{% endif %}</div></div>
+          <div class="mb-3"><div class="text-secondary small">Total</div><div class="fw-semibold">{{ format_currency(job.total_cost if job.total_cost is not none else 0) }}</div></div>
+          <div class="mb-0"><div class="text-secondary small">Status</div><div class="fw-semibold">{{ job.status_text }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title mb-0">Status history</h3>
+          <span class="badge bg-primary-lt">{{ status_history|length }} changes</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table card-table table-vcenter">
+            <thead><tr><th>From</th><th>To</th><th>Note</th></tr></thead>
+            <tbody>
+            {% for entry in status_history %}
+              <tr>
+                <td>{{ entry.old_status or '—' }}</td>
+                <td>{{ entry.new_status }}</td>
+                <td>{{ entry.note or '—' }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="3" class="text-center text-secondary py-4">No status changes recorded yet.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title mb-0">Services and parts</h3></div>
+        <div class="card-body">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <h4 class="h6 text-uppercase text-secondary">Services</h4>
+              {% if services %}
+                <ul class="list-group list-group-flush">
+                  {% for item in services %}
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                      <span>{{ item.name }} × {{ item.qty }}</span>
+                      <span>{{ format_currency(item.total_cost if item.total_cost is not none else 0) }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="text-secondary">No services attached.</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <h4 class="h6 text-uppercase text-secondary">Parts</h4>
+              {% if parts %}
+                <ul class="list-group list-group-flush">
+                  {% for item in parts %}
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                      <span>{{ item.name }} × {{ item.qty }}</span>
+                      <span>{{ format_currency(item.total_cost if item.total_cost is not none else 0) }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="text-secondary">No parts attached.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3 class="card-title mb-0">Attachments</h3></div>
+        <div class="card-body">
+          {% if attachments %}
+            <ul class="list-group list-group-flush">
+              {% for attachment in attachments %}
+                <li class="list-group-item px-0">
+                  <div class="fw-semibold">{{ attachment.filename }}</div>
+                  <div class="text-secondary small">{{ attachment.caption or attachment.mime_type or 'Attachment' }}</div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-secondary">No attachments uploaded for this job.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

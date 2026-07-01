@@ -1,0 +1,382 @@
+{% extends "base/layout.html" %}
+
+{% block title %}{{ customer.first_name }} {{ customer.family_name }} - KarFix{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+    </li>
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('main.customers') }}">Customers</a>
+    </li>
+    <li class="breadcrumb-item active">{{ customer.first_name }} {{ customer.family_name }}</li>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-gray-900 mb-2 d-flex align-items-center gap-2">
+            <i class="ti ti-user text-primary"></i>
+            {{ customer.first_name }} {{ customer.family_name }}
+        </h1>
+        <p class="text-muted mb-0">Customer ID: #{{ customer.customer_id }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('main.edit_customer', customer_id=customer.customer_id) }}" class="btn btn-accent">
+            <i class="ti ti-pencil me-2"></i>Edit Customer
+        </a>
+        <a href="{{ url_for('main.customers') }}" class="btn btn-outline-secondary">
+            <i class="ti ti-arrow-left me-2"></i>Back to Customers
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+{% if stats %}
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-primary-lt me-2"><i class="ti ti-briefcase"></i></span>
+                    <div class="subheader">Total Jobs</div>
+                </div>
+                <div class="h1 mb-0">{{ stats.total_jobs|default(0) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-success-lt me-2"><i class="ti ti-circle-check"></i></span>
+                    <div class="subheader">Completed</div>
+                </div>
+                <div class="h1 mb-0">{{ stats.completed_jobs|default(0) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-info-lt me-2"><i class="ti ti-currency-dollar"></i></span>
+                    <div class="subheader">Total Revenue</div>
+                </div>
+                <div class="h1 mb-0">{{ format_currency(stats.total_revenue|default(0)|float) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-danger-lt me-2"><i class="ti ti-alert-triangle"></i></span>
+                    <div class="subheader">Unpaid Amount</div>
+                </div>
+                <div class="h1 mb-0">{{ format_currency(stats.unpaid_amount|default(0)|float) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if vehicles is defined %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="ti ti-car me-2"></i>
+                    Vehicles
+                </h3>
+                <span class="badge bg-primary-lt">{{ vehicles|length }} total</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="card h-100 border">
+                            <div class="card-header bg-light">
+                                <h4 class="card-title mb-0">
+                                    <i class="ti ti-plus me-1"></i>
+                                    Add Vehicle
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('main.create_vehicle', customer_id=customer.customer_id) }}">
+                                    <div class="mb-3">
+                                        <label class="form-label">Make *</label>
+                                        <input type="text" class="form-control" name="make" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Model *</label>
+                                        <input type="text" class="form-control" name="model" required>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Year</label>
+                                            <input type="number" class="form-control" name="year" min="1900" max="2100">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Mileage</label>
+                                            <input type="number" class="form-control" name="mileage" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Registration</label>
+                                        <input type="text" class="form-control" name="registration_number">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">VIN</label>
+                                        <input type="text" class="form-control" name="vin">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Color</label>
+                                        <input type="text" class="form-control" name="color">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Notes</label>
+                                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="is_primary" name="is_primary" value="1">
+                                        <label class="form-check-label" for="is_primary">Set as primary vehicle</label>
+                                    </div>
+                                    <button type="submit" class="btn btn-accent w-100">Save Vehicle</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        {% if vehicles %}
+                        <div class="row g-3">
+                            {% for vehicle in vehicles %}
+                            <div class="col-md-6">
+                                <div class="card h-100 border">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h5 class="mb-1">{{ vehicle.display_name }}</h5>
+                                                <div class="text-muted small">
+                                                    {% if vehicle.registration_number %}Reg: {{ vehicle.registration_number }}{% endif %}
+                                                    {% if vehicle.vin %}<br>VIN: {{ vehicle.vin }}{% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-1">
+                                                {% if vehicle.is_primary %}
+                                                <span class="badge bg-success">Primary</span>
+                                                {% endif %}
+                                                {% if vehicle.is_active %}
+                                                <span class="badge bg-info">Active</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="small text-muted mb-3">
+                                            {% if vehicle.color %}<div>Color: {{ vehicle.color }}</div>{% endif %}
+                                            {% if vehicle.mileage is not none %}<div>Mileage: {{ vehicle.mileage }} km</div>{% endif %}
+                                        </div>
+
+                                        <div class="border-top pt-3">
+                                            <h6 class="mb-2">Repair History</h6>
+                                            {% set history = vehicle_histories.get(vehicle.vehicle_id, []) %}
+                                            {% if history %}
+                                            <div class="list-group list-group-flush">
+                                                {% for job in history[:3] %}
+                                                <a href="{{ url_for('technician.job_detail', job_id=job.job_id) }}" class="list-group-item list-group-item-action px-0">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Job #{{ job.job_id }}</span>
+                                                        <small class="text-muted">{{ job.job_date.strftime('%b %d, %Y') if job.job_date else '' }}</small>
+                                                    </div>
+                                                    <div class="small text-muted">
+                                                        {{ job.status_text }} · {% if job.mileage is not none %}{{ job.mileage }} km · {% endif %}{{ format_currency(job.total_cost|default(0)|float) }}
+                                                    </div>
+                                                </a>
+                                                {% endfor %}
+                                            </div>
+                                            {% else %}
+                                            <div class="text-muted small">No repair history yet.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info mb-0">
+                            No vehicles have been added for this customer yet.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Customer Information Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-user me-1"></i>
+                    Customer Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 d-flex align-items-center justify-content-center">
+                        <i class="ti ti-user text-primary" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-5">{{ customer.first_name }} {{ customer.family_name }}</div>
+                        <small class="text-muted">Customer #{{ customer.customer_id }}</small>
+                    </div>
+                </div>
+
+                {% if customer.email %}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="ti ti-mail text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Email</small>
+                        <span class="fw-medium">{{ customer.email }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if customer.phone %}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="ti ti-phone text-muted me-3"></i>
+                    <div>
+                        <small class="text-muted d-block">Phone</small>
+                        <span class="fw-medium">{{ customer.phone }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if is_platform_admin %}
+                <div class="border-top pt-3 mt-3">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <div>
+                            <small class="text-muted d-block">Portal Access</small>
+                            {% if portal_status and portal_status.enabled %}
+                                <span class="badge bg-success">Enabled</span>
+                            {% elif portal_status and portal_status.local_account_linked %}
+                                <span class="badge bg-warning text-dark">Provisioning issue</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Not enabled</span>
+                            {% endif %}
+                            {% if portal_status and portal_status.linked_email %}
+                                <div class="small text-muted mt-1">{{ portal_status.linked_email }}</div>
+                            {% endif %}
+                            {% if portal_status and portal_status.provisioning_status %}
+                                <div class="small text-muted mt-1">Status: {{ portal_status.provisioning_status|replace('_', ' ')|title }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            {% if customer.email %}
+                                {% if not (portal_status and portal_status.enabled) %}
+                                <form method="POST" action="{{ url_for('main.enable_customer_portal_access', customer_id=customer.customer_id) }}">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="ti ti-shield-check me-1"></i>Enable Portal Access
+                                    </button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                                <span class="small text-muted">Add an email address first.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if portal_status and portal_status.provisioning_status in ['partial', 'failed', 'local_only'] %}
+                    <div class="alert alert-warning mt-3 mb-0 py-2">
+                        {% if portal_status.provisioning_status == 'local_only' %}
+                            Portal access was linked locally, but external provisioning is not configured on this deployment.
+                        {% elif portal_status.provisioning_status == 'failed' %}
+                            Portal access provisioning failed. Please review the warning messages from the enable action.
+                        {% else %}
+                            Portal access was created with warnings. Please review the warning messages from the enable action.
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Job History -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-file-text me-1"></i>
+                    Job History
+                </h3>
+            </div>
+
+            {% if job_history %}
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Mileage</th>
+                            <th>Status</th>
+                            <th>Payment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in job_history %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('technician.job_detail', job_id=job.job_id) }}" class="text-decoration-none fw-semibold">
+                                    #{{ job.job_id }}
+                                </a>
+                            </td>
+                            <td>{{ job.job_date.strftime('%b %d, %Y') if job.job_date else 'N/A' }}</td>
+                            <td><span class="fw-semibold text-success">{{ format_currency(job.total_cost|float) }}</span></td>
+                            <td>{{ job.mileage if job.mileage is not none else 'N/A' }}{% if job.mileage is not none %} km{% endif %}</td>
+                            <td>
+                                {% if job.completed %}
+                                <span class="badge bg-success"><i class="ti ti-circle-check me-1"></i>Completed</span>
+                                {% else %}
+                                <span class="badge bg-warning"><i class="ti ti-clock me-1"></i>In Progress</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if job.paid %}
+                                <span class="badge bg-success"><i class="ti ti-credit-card me-1"></i>Paid</span>
+                                {% else %}
+                                <span class="badge bg-danger"><i class="ti ti-alert-triangle me-1"></i>Unpaid</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('technician.job_detail', job_id=job.job_id) }}"
+                                   class="btn btn-sm btn-outline-primary" title="View">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty">
+                <div class="empty-icon"><i class="ti ti-file-text"></i></div>
+                <p class="empty-title">No Job History</p>
+                <p class="empty-subtitle text-secondary">This customer has no jobs on record yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

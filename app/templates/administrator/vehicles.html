@@ -1,0 +1,48 @@
+{% extends "base/layout_with_sidebar.html" %}
+{% block title %}Vehicles - Workshop Administration{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1 d-flex align-items-center gap-2">
+                <i class="ti ti-car text-primary"></i>
+                Vehicle Management
+            </h1>
+            <p class="text-secondary mb-0">Customer vehicles and service history visibility</p>
+        </div>
+        <a href="{{ url_for('administrator.customer_list') }}" class="btn btn-outline-primary">Customers</a>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table card-table table-vcenter">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Customer</th>
+                        <th>Registration</th>
+                        <th>Last Service</th>
+                        <th>History</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in vehicle_rows %}
+                    <tr>
+                        <td class="fw-semibold">{{ row.vehicle.display_name }}</td>
+                        <td>
+                            <a href="{{ url_for('main.customer_detail', customer_id=row.customer.customer_id) }}">{{ row.customer_name }}</a>
+                        </td>
+                        <td>{{ row.vehicle.registration_number or '—' }}</td>
+                        <td>{{ row.last_service_date or 'No history yet' }}</td>
+                        <td>{{ row.history_count }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-muted">No vehicles found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

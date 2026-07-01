@@ -1,0 +1,26 @@
+{% extends "base/layout.html" %}
+{% block title %}Audit Log - KarFix Platform Owner{% endblock %}
+{% block breadcrumb_items %}<li class="breadcrumb-item"><a href="{{ url_for('admin.home') }}">Platform Dashboard</a></li><li class="breadcrumb-item active">Audit</li>{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title mb-0">Platform Audit Log</h3></div>
+  <div class="table-responsive">
+    <table class="table card-table table-vcenter">
+      <thead><tr><th>When</th><th>Action</th><th>Entity</th><th>Tenant</th><th>User</th></tr></thead>
+      <tbody>
+        {% for row in audit_rows %}
+        <tr>
+          <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '' }}</td>
+          <td>{{ row.action }}</td>
+          <td>{{ row.entity_type }}{% if row.entity_id %} #{{ row.entity_id }}{% endif %}</td>
+          <td>{{ row.tenant.name if row.tenant else 'Global' }}</td>
+          <td>{{ row.user.username if row.user else 'System' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-secondary py-4">No audit events yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

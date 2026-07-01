@@ -1,0 +1,165 @@
+{% extends "base/layout_with_sidebar.html" %}
+{% block title %}Bookings - Workshop Administration{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1 d-flex align-items-center gap-2">
+                <i class="ti ti-calendar-event text-primary"></i>
+                Booking Management
+            </h1>
+            <p class="text-secondary mb-0">Create and review draft or upcoming bookings</p>
+        </div>
+        <a href="{{ url_for('administrator.jobs') }}" class="btn btn-outline-primary">Job Board</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0">Create Booking</h3></div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Customer</label>
+                            <select name="customer_id" id="bookingCustomerSelect" class="form-select" required>
+                                <option value="">Select customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.customer_id }}">{{ customer.full_name or customer.first_name ~ ' ' ~ customer.family_name }}{% if customer.email %} · {{ customer.email }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Job Date</label>
+                            <input type="date" class="form-control" name="job_date" min="{{ current_date }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="bookingVehicleSelect">Customer Vehicle</label>
+                            <select id="bookingVehicleSelect" name="vehicle_id" class="form-select" disabled>
+                                <option value="">Select customer first</option>
+                            </select>
+                            <div class="form-hint text-secondary mt-2" id="bookingVehicleHint">Choose a customer to load their vehicles.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mileage (optional)</label>
+                            <input type="number" class="form-control" name="mileage" min="0">
+                        </div>
+                        <button class="btn btn-primary" type="submit">Create booking</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Upcoming Bookings</h3>
+                    <span class="badge bg-secondary-lt text-secondary">{{ total }} total</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table card-table table-vcenter">
+                        <thead>
+                            <tr>
+                                <th>Job</th>
+                                <th>Customer</th>
+                                <th>Vehicle</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in bookings %}
+                            <tr>
+                                <td><a href="{{ url_for('administrator.job_detail', job_id=job.job_id) }}">#{{ job.job_id }}</a></td>
+                                <td>{{ job.first_name }} {{ job.family_name }}</td>
+                                <td>{{ job.vehicle_display_name or 'No vehicle selected' }}</td>
+                                <td>{{ job.job_date }}</td>
+                                <td><span class="badge bg-warning-lt text-warning">{{ job.status_text }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-muted">No upcoming bookings.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block admin_extra_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const customerSelect = document.getElementById('bookingCustomerSelect');
+    const vehicleSelect = document.getElementById('bookingVehicleSelect');
+    const vehicleHint = document.getElementById('bookingVehicleHint');
+
+    if (!customerSelect || !vehicleSelect) return;
+
+    const resetVehicles = (message) => {
+        vehicleSelect.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = message || 'Select customer first';
+        vehicleSelect.appendChild(option);
+        vehicleSelect.disabled = true;
+        if (vehicleHint) vehicleHint.textContent = 'Choose a customer to load their vehicles.';
+    };
+
+    const populateVehicles = (vehicles) => {
+        vehicleSelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = vehicles.length ? 'Select vehicle (optional)' : 'No vehicles found';
+        vehicleSelect.appendChild(placeholder);
+        vehicles.forEach((vehicle) => {
+            const option = document.createElement('option');
+            option.value = vehicle.vehicle_id;
+            option.textContent = vehicle.display_name || vehicle.registration_number || `Vehicle #${vehicle.vehicle_id}`;
+            if (vehicle.is_primary) {
+                option.textContent += ' · Primary';
+            }
+            vehicleSelect.appendChild(option);
+        });
+        vehicleSelect.disabled = false;
+        if (vehicleHint) {
+            vehicleHint.textContent = vehicles.length
+                ? `${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'} found for the selected customer.`
+                : 'No vehicles registered for this customer yet. You can continue without selecting one.';
+        }
+    };
+
+    const loadVehicles = async (customerId) => {
+        if (!customerId) {
+            resetVehicles();
+            return;
+        }
+        resetVehicles('Loading vehicles...');
+        try {
+            const response = await fetch(`/api/customers/${customerId}/vehicles`, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const vehicles = await response.json();
+            populateVehicles(Array.isArray(vehicles) ? vehicles : []);
+        } catch (error) {
+            console.error('Failed to load customer vehicles:', error);
+            resetVehicles('Unable to load vehicles');
+            if (vehicleHint) vehicleHint.textContent = 'Unable to load vehicles for the selected customer.';
+        }
+    };
+
+    customerSelect.addEventListener('change', (event) => loadVehicles(event.target.value));
+
+    if (customerSelect.value) {
+        loadVehicles(customerSelect.value);
+    } else {
+        resetVehicles();
+    }
+});
+</script>
+{% endblock %}

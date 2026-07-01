@@ -1,0 +1,245 @@
+{% extends "base/layout.html" %}
+
+{% block title %}New Job - KarFix{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+    </li>
+    <li class="breadcrumb-item">
+        <a href="{{ url_for('technician.current_jobs') }}">Current Jobs</a>
+    </li>
+    <li class="breadcrumb-item active">New Job</li>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-gray-900 mb-2 d-flex align-items-center gap-2">
+            <i class="ti ti-circle-plus text-primary"></i>
+            Create New Job
+        </h1>
+        <p class="text-muted mb-0">Start a new work order for a customer</p>
+    </div>
+    <div>
+        <a href="{{ url_for('technician.current_jobs') }}" class="btn btn-outline-secondary">
+            <i class="ti ti-arrow-left me-2"></i>Back to Jobs
+        </a>
+    </div>
+</div>
+
+<!-- New Job Form -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-file-plus me-2"></i>
+                    Job Details
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('technician.create_job') }}" id="newJobForm">
+                    <!-- Customer Selection -->
+                    <div class="mb-4">
+                        <label for="customer_id" class="form-label fw-semibold">
+                            <i class="ti ti-user me-1"></i>
+                            Customer
+                        </label>
+                        <select class="form-select" id="customer_id" name="customer_id" required>
+                            <option value="">Select a customer...</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.customer_id }}" {% if selected_customer_id == customer.customer_id %}selected{% endif %}>
+                                {{ customer.first_name }} {{ customer.family_name }}
+                                {% if customer.email %} ({{ customer.email }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            <i class="ti ti-info-circle me-1"></i>
+                            Choose the customer for this work order.
+                        </div>
+                    </div>
+
+                    <!-- Vehicle Selection -->
+                    <div class="mb-4">
+                        <label for="vehicle_id" class="form-label fw-semibold">
+                            <i class="ti ti-car me-1"></i>
+                            Vehicle
+                        </label>
+                        <select class="form-select" id="vehicle_id" name="vehicle_id" disabled>
+                            <option value="">Select a customer first...</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="ti ti-info-circle me-1"></i>
+                            Select the customer vehicle that this job relates to.
+                        </div>
+                    </div>
+
+                    <!-- Mileage -->
+                    <div class="mb-4">
+                        <label for="mileage" class="form-label fw-semibold">
+                            <i class="ti ti-tachometer me-1"></i>
+                            Current Mileage
+                        </label>
+                        <input type="number" class="form-control" id="mileage" name="mileage" min="0" value="{{ selected_mileage or '' }}" placeholder="Enter or select current mileage">
+                        <div class="form-text">
+                            <i class="ti ti-info-circle me-1"></i>
+                            Captured at job creation and stored with the work order history.
+                        </div>
+                    </div>
+
+                    <!-- Job Date -->
+                    <div class="mb-4">
+                        <label for="job_date" class="form-label fw-semibold">
+                            <i class="ti ti-calendar me-1"></i>
+                            Job Date
+                        </label>
+                        <input type="date" class="form-control" id="job_date" name="job_date"
+                               min="{{ min_date }}" value="{{ selected_job_date or '' }}" required>
+                        <div class="form-text">
+                            <i class="ti ti-info-circle me-1"></i>
+                            Select the date for this work order.
+                        </div>
+                    </div>
+
+                    <!-- Workflow Status -->
+                    <div class="mb-4">
+                        <label for="status" class="form-label fw-semibold">
+                            <i class="ti ti-badge me-1"></i>
+                            Initial Status
+                        </label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="draft">Draft</option>
+                            <option value="in_progress" selected>In Progress</option>
+                            <option value="awaiting_parts">Awaiting Parts</option>
+                        </select>
+                    </div>
+
+                    <!-- Technician Assignment -->
+                    <div class="mb-4">
+                        <label for="technician_id" class="form-label fw-semibold">
+                            <i class="ti ti-user-cog me-1"></i>
+                            Technician Assignment
+                        </label>
+                        <select class="form-select" id="technician_id" name="technician_id">
+                            <option value="">Assign later</option>
+                            {% for technician in available_technicians or [] %}
+                            <option value="{{ technician.user_id }}">{{ technician.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            <i class="ti ti-info-circle me-1"></i>
+                            You can assign a technician now or leave the job unassigned for later.
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a href="{{ url_for('technician.current_jobs') }}" class="btn btn-outline-secondary">
+                            <i class="ti ti-x me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-accent">
+                            <i class="ti ti-plus me-1"></i>Create Job
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Message Display -->
+{% if message %}
+<div class="alert alert-warning alert-dismissible fade show mt-3 d-flex align-items-center gap-2" role="alert">
+    <i class="ti ti-alert-triangle"></i>
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSelect = document.getElementById('customer_id');
+    const vehicleSelect = document.getElementById('vehicle_id');
+    const selectedVehicleId = {{ (selected_vehicle_id or '')|tojson }};
+    const mileageInput = document.getElementById('mileage');
+
+    async function loadVehicles(customerId) {
+        vehicleSelect.innerHTML = '<option value="">Loading vehicles...</option>';
+        vehicleSelect.disabled = true;
+
+        if (!customerId) {
+            vehicleSelect.innerHTML = '<option value="">Select a customer first...</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/customers/${customerId}/vehicles`);
+            const vehicles = await response.json();
+
+            vehicleSelect.innerHTML = '<option value="">Select a vehicle...</option>';
+            if (!Array.isArray(vehicles) || vehicles.length === 0) {
+                vehicleSelect.innerHTML = '<option value="">No vehicles on file</option>';
+                return;
+            }
+
+            vehicles.forEach(vehicle => {
+                const option = document.createElement('option');
+                option.value = vehicle.vehicle_id;
+                option.textContent = vehicle.display_name || `Vehicle #${vehicle.vehicle_id}`;
+                option.dataset.mileage = vehicle.mileage ?? '';
+                if (String(vehicle.vehicle_id) === String(selectedVehicleId)) {
+                    option.selected = true;
+                    if (mileageInput && vehicle.mileage !== null && vehicle.mileage !== undefined && mileageInput.value === '') {
+                        mileageInput.value = vehicle.mileage;
+                    }
+                }
+                vehicleSelect.appendChild(option);
+            });
+
+            vehicleSelect.disabled = false;
+            if (vehicles.length === 1 && !selectedVehicleId) {
+                vehicleSelect.selectedIndex = 1;
+                const selectedVehicle = vehicles[0];
+                if (mileageInput && selectedVehicle && selectedVehicle.mileage !== null && selectedVehicle.mileage !== undefined && mileageInput.value === '') {
+                    mileageInput.value = selectedVehicle.mileage;
+                }
+            }
+        } catch (error) {
+            vehicleSelect.innerHTML = '<option value="">Unable to load vehicles</option>';
+        }
+    }
+
+    if (customerSelect.value) {
+        loadVehicles(customerSelect.value);
+    }
+
+    customerSelect.addEventListener('change', function() {
+        loadVehicles(this.value);
+    });
+
+    vehicleSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (mileageInput && selectedOption && selectedOption.dataset && selectedOption.dataset.mileage !== undefined) {
+            const mileage = selectedOption.dataset.mileage;
+            if (mileage !== '' && mileageInput.value === '') {
+                mileageInput.value = mileage;
+            }
+        }
+    });
+
+    // Set default date to today only when the field is blank.
+    const dateInput = document.getElementById('job_date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+});
+</script>
+
+{% endblock %}
